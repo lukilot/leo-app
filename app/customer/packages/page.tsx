@@ -62,20 +62,20 @@ export default function CustomerPackages() {
         <div className="min-h-screen bg-leo-bg pb-24">
             <header className="bg-white p-6 sticky top-0 z-10 border-b border-leo-gray-100">
                 <h1 className="text-2xl font-bold text-leo-primary">Twoje przesyłki</h1>
-                <div className="flex gap-4 mt-4">
+                <div className="flex gap-4 mt-4 relative">
                     <button
                         onClick={() => setTab("active")}
                         className={cn("pb-2 text-sm font-medium transition-colors relative", tab === "active" ? "text-leo-primary" : "text-leo-gray-400")}
                     >
                         Aktywne ({loading ? '-' : activePackages.length})
-                        {tab === "active" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-leo-primary" />}
+                        {tab === "active" && <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-leo-primary" />}
                     </button>
                     <button
                         onClick={() => setTab("history")}
                         className={cn("pb-2 text-sm font-medium transition-colors relative", tab === "history" ? "text-leo-primary" : "text-leo-gray-400")}
                     >
                         Historia
-                        {tab === "history" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-leo-primary" />}
+                        {tab === "history" && <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-leo-primary" />}
                     </button>
                 </div>
             </header>
