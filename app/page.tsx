@@ -28,6 +28,19 @@ export default function Home() {
           </div>
 
           <div className="grid gap-4">
+            <Link href="/dispatch">
+              <Button size="lg" className="w-full h-20 text-lg justify-start px-6 group border border-leo-gray-200" variant="ghost">
+                <div className="bg-leo-gray-100 p-2 rounded-lg mr-4 group-hover:bg-leo-gray-200 transition-colors">
+                  <Truck className="h-6 w-6 text-leo-gray-700" />
+                </div>
+                <div className="text-left">
+                  <div className="font-semibold text-leo-primary">HQ (Dyspozytornia)</div>
+                  <div className="text-xs text-leo-gray-500 font-normal">Panel menedżera (na duży ekran)</div>
+                </div>
+                <ArrowRight className="ml-auto text-leo-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Button>
+            </Link>
+
             <Link href="/courier/onboarding">
               <Button size="lg" className="w-full h-20 text-lg justify-start px-6 group" variant="primary">
                 <div className="bg-white/10 p-2 rounded-lg mr-4 group-hover:bg-white/20 transition-colors">
@@ -56,7 +69,7 @@ export default function Home() {
           </div>
 
           <p className="text-xs text-leo-gray-400 mt-8">
-            LEO Prototype v0.1 • Next.js + Tailwind
+            LEO Prototype v0.2 • Next.js + Tailwind
             <br />
             <span className="opacity-50">Inspiracja: Ciąg Fibonacciego</span>
           </p>
