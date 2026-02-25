@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { Search, MessageSquare, Phone, MoreVertical, CheckCheck } from "lucide-react";
+import { Search, MessageSquare, CheckCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 
@@ -41,36 +42,37 @@ export default function Messages() {
 
             <main className="p-4 space-y-2">
                 {CHATS.map((chat, idx) => (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.1 }}
-                        key={chat.id}
-                        className="bg-white p-4 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all cursor-pointer shadow-sm hover:shadow-md border border-transparent hover:border-leo-gray-100"
-                    >
-                        <div className={`h-14 w-14 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${chat.system ? 'bg-blue-100 text-blue-700' : (chat.unread > 0 ? 'bg-leo-primary text-white' : 'bg-leo-gray-100 text-leo-gray-500')}`}>
-                            {chat.avatar}
-                        </div>
+                    <Link key={chat.id} href={`/courier/messages/${chat.id}`} className="block">
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            className="bg-white p-4 rounded-2xl flex items-center gap-4 active:scale-[0.98] transition-all cursor-pointer shadow-sm hover:shadow-md border border-transparent hover:border-leo-gray-100"
+                        >
+                            <div className={`h-14 w-14 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${chat.system ? 'bg-blue-100 text-blue-700' : (chat.unread > 0 ? 'bg-leo-primary text-white' : 'bg-leo-gray-100 text-leo-gray-500')}`}>
+                                {chat.avatar}
+                            </div>
 
-                        <div className="flex-1 overflow-hidden">
-                            <div className="flex justify-between items-end mb-1">
-                                <h3 className={`font-bold truncate pr-2 ${chat.unread > 0 ? 'text-leo-gray-900' : 'text-leo-gray-700'}`}>{chat.name}</h3>
-                                <span className={`text-xs shrink-0 ${chat.unread > 0 ? 'text-leo-primary font-bold' : 'text-leo-gray-400'}`}>{chat.time}</span>
+                            <div className="flex-1 overflow-hidden">
+                                <div className="flex justify-between items-end mb-1">
+                                    <h3 className={`font-bold truncate pr-2 ${chat.unread > 0 ? 'text-leo-gray-900' : 'text-leo-gray-700'}`}>{chat.name}</h3>
+                                    <span className={`text-xs shrink-0 ${chat.unread > 0 ? 'text-leo-primary font-bold' : 'text-leo-gray-400'}`}>{chat.time}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    {chat.unread === 0 && <CheckCheck className="h-4 w-4 text-blue-500 shrink-0" />}
+                                    <p className={`text-sm truncate ${chat.unread > 0 ? 'font-semibold text-leo-gray-800' : 'text-leo-gray-500'}`}>
+                                        {chat.text}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                                {chat.unread === 0 && <CheckCheck className="h-4 w-4 text-blue-500 shrink-0" />}
-                                <p className={`text-sm truncate ${chat.unread > 0 ? 'font-semibold text-leo-gray-800' : 'text-leo-gray-500'}`}>
-                                    {chat.text}
-                                </p>
-                            </div>
-                        </div>
 
-                        {chat.unread > 0 && (
-                            <div className="bg-leo-primary text-white h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">
-                                {chat.unread}
-                            </div>
-                        )}
-                    </motion.div>
+                            {chat.unread > 0 && (
+                                <div className="bg-leo-primary text-white h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">
+                                    {chat.unread}
+                                </div>
+                            )}
+                        </motion.div>
+                    </Link>
                 ))}
 
                 {CHATS.length > 0 && (
