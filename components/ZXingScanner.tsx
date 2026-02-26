@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { BrowserMultiFormatReader } from "@zxing/browser";
-import type { IScannerControls } from "@zxing/browser";
 import { cn } from "@/lib/utils";
 import { X, CheckCircle2, Zap, AlertCircle, SwitchCamera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,131 +21,121 @@ export default function ZXingScanner({
     label = "Skanuj kod paczki"
 }: ZXingScannerProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const streamRef = useRef<MediaStream | null>(null);
-    const controlsRef = useRef<IScannerControls | null>(null);
+    const scannerRef = useRef<any>(null);
 
     const [status, setStatus] = useState<"scanning" | "success" | "error">("scanning");
     const [scannedCode, setScannedCode] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
-    const [useFrontCamera, setUseFrontCamera] = useState(false);
+    const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
-    const stopAll = useCallback(() => {
-        try { controlsRef.current?.stop(); } catch (_) { }
-        try { streamRef.current?.getTracks().forEach(t => t.stop()); } catch (_) { }
-        controlsRef.current = null;
-        streamRef.current = null;
+    const stopScanner = useCallback(() => {
+        if (scannerRef.current) {
+            try {
+                scannerRef.current.stop();
+                scannerRef.current.destroy();
+            } catch (_) { }
+            scannerRef.current = null;
+        }
     }, []);
 
-    const startCamera = useCallback(async (frontCamera = false) => {
-        stopAll();
+    const startScanner = useCallback(async (camera: "environment" | "user" = "environment") => {
+        stopScanner();
         setStatus("scanning");
         setErrorMsg(null);
 
+        if (!videoRef.current) return;
+
         try {
-            // Step 1: get raw media stream (bypasses ZXing's internal camera selection)
-            const constraints: MediaStreamConstraints = {
-                video: {
-                    // On mobile: try rear camera. On desktop: just grab whatever exists.
-                    facingMode: frontCamera ? "user" : { ideal: "environment" },
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }
-            };
+            // Dynamic import — keeps bundle small, avoids SSR issues
+            const QrScanner = (await import("qr-scanner")).default;
 
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            streamRef.current = stream;
-
-            // Step 2: attach stream to video element manually
-            if (!videoRef.current) throw new Error("Video element not ready");
-            videoRef.current.srcObject = stream;
-            await videoRef.current.play();
-
-            // Step 3: hand the live stream to ZXing for decoding
-            const reader = new BrowserMultiFormatReader();
-            const controls = await reader.decodeFromStream(
-                stream,
+            const scanner = new QrScanner(
                 videoRef.current,
-                (result, error) => {
-                    if (result) {
-                        const code = result.getText();
+                (result: any) => {
+                    const code = typeof result === "string" ? result : result.data;
 
-                        if (expectedPrefix && !code.startsWith(expectedPrefix)) {
-                            setErrorMsg(`Oczekiwany format: ${expectedPrefix}...`);
-                            return;
-                        }
-
-                        // Success!
-                        setScannedCode(code);
-                        setStatus("success");
-                        stopAll();
-
-                        if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]);
-                        setTimeout(() => onScan(code), 700);
+                    if (expectedPrefix && !code.startsWith(expectedPrefix)) {
+                        setErrorMsg(`Oczekiwany format: ${expectedPrefix}...`);
+                        return;
                     }
-                    // ZXing fires errors constantly when no code is in frame — ignore them
+
+                    setScannedCode(code);
+                    setStatus("success");
+                    stopScanner();
+
+                    if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]);
+                    setTimeout(() => onScan(code), 700);
+                },
+                {
+                    // qr-scanner options
+                    preferredCamera: camera,
+                    highlightScanRegion: true,     // draws the scan region outline
+                    highlightCodeOutline: true,     // draws the detected QR outline
+                    returnDetailedScanResult: true,
+                    maxScansPerSecond: 5,
                 }
             );
 
-            controlsRef.current = controls;
+            scannerRef.current = scanner;
+            await scanner.start();
 
         } catch (err: any) {
-            console.error("Camera error:", err?.name, err?.message);
+            console.error("QR Scanner error:", err?.name, err?.message);
 
-            if (err?.name === "NotAllowedError") {
+            if (
+                err?.message?.includes("Permission") ||
+                err?.name === "NotAllowedError" ||
+                err?.message?.includes("not allowed")
+            ) {
                 setStatus("error");
-                setErrorMsg("Brak dostępu do kamery. Zezwól na aparat w ustawieniach przeglądarki, a następnie odśwież.");
-            } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
+                setErrorMsg("Brak dostępu do kamery. Zezwól na aparat w ustawieniach Safari → Prywatność → Kamera, a następnie odśwież stronę.");
+            } else if (
+                err?.message?.includes("No camera") ||
+                err?.name === "NotFoundError"
+            ) {
                 setStatus("error");
-                setErrorMsg("Nie wykryto kamery. Sprawdź czy urządzenie ma działający aparat.");
-            } else if (err?.name === "OverconstrainedError" && !frontCamera) {
-                // environment-facing not available (desktop) → retry with front cam
-                startCamera(true);
+                setErrorMsg("Nie wykryto kamery. Sprawdź ustawienia urządzenia.");
             } else {
                 setStatus("error");
-                setErrorMsg(`Błąd kamery: ${err?.message}`);
+                setErrorMsg(`Błąd: ${err?.message ?? "Nieznany błąd kamery"}`);
             }
         }
-    }, [onScan, stopAll, expectedPrefix]);
+    }, [onScan, stopScanner, expectedPrefix]);
 
-    // Mount / unmount
     useEffect(() => {
-        startCamera(false);
-        return () => stopAll();
+        startScanner(facingMode);
+        return () => stopScanner();
     }, []); // eslint-disable-line
 
     const handleSwitchCamera = () => {
-        const newFront = !useFrontCamera;
-        setUseFrontCamera(newFront);
-        startCamera(newFront);
+        const next = facingMode === "environment" ? "user" : "environment";
+        setFacingMode(next);
+        startScanner(next);
     };
 
     return (
         <div className={cn("flex flex-col items-center w-full select-none", className)}>
             {/* Viewfinder */}
             <div className="relative w-full aspect-square max-w-sm rounded-[2rem] overflow-hidden bg-zinc-900 shadow-2xl border-4 border-white">
-                {/* The video element is always rendered so the ref is always available */}
+                {/* video element — qr-scanner takes control of this */}
                 <video
                     ref={videoRef}
                     className="w-full h-full object-cover"
+                    // iOS Safari requires all three of these attributes
                     autoPlay
                     muted
                     playsInline
                 />
 
-                {/* Scanning UI */}
+                {/* Scan border is injected by qr-scanner's highlightScanRegion.
+                    We add our own animated laser line on top. */}
                 {status === "scanning" && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="relative w-52 h-52">
-                            {/* Corner brackets */}
-                            {[
-                                "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-xl",
-                                "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-xl",
-                                "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-xl",
-                                "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-xl"
-                            ].map((cls, i) => (
-                                <div key={i} className={`absolute w-8 h-8 border-leo-primary ${cls}`} />
-                            ))}
-                            {/* Laser line */}
+                            <div className="absolute top-0 left-0 w-8 h-8 border-t-[3px] border-l-[3px] border-leo-primary rounded-tl-xl" />
+                            <div className="absolute top-0 right-0 w-8 h-8 border-t-[3px] border-r-[3px] border-leo-primary rounded-tr-xl" />
+                            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-[3px] border-l-[3px] border-leo-primary rounded-bl-xl" />
+                            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-[3px] border-r-[3px] border-leo-primary rounded-br-xl" />
                             <motion.div
                                 className="absolute left-2 right-2 h-[2px] bg-leo-primary shadow-[0_0_10px_#FFD700]"
                                 animate={{ top: ["10%", "88%", "10%"] }}
@@ -157,7 +145,7 @@ export default function ZXingScanner({
                     </div>
                 )}
 
-                {/* Success overlay */}
+                {/* Success */}
                 <AnimatePresence>
                     {status === "success" && (
                         <motion.div
@@ -180,7 +168,7 @@ export default function ZXingScanner({
                     )}
                 </AnimatePresence>
 
-                {/* Error overlay */}
+                {/* Error */}
                 <AnimatePresence>
                     {status === "error" && (
                         <motion.div
@@ -191,7 +179,7 @@ export default function ZXingScanner({
                             <AlertCircle className="w-12 h-12 text-red-400 shrink-0" />
                             <p className="text-white text-[12px] leading-relaxed font-medium">{errorMsg}</p>
                             <button
-                                onClick={() => startCamera(useFrontCamera)}
+                                onClick={() => startScanner(facingMode)}
                                 className="px-6 py-3 bg-leo-primary text-black text-[11px] font-black uppercase tracking-widest rounded-2xl"
                             >
                                 Spróbuj ponownie
@@ -200,7 +188,7 @@ export default function ZXingScanner({
                     )}
                 </AnimatePresence>
 
-                {/* Overlay controls */}
+                {/* Controls */}
                 <div className="absolute top-3 right-3 flex gap-2 z-10">
                     <button
                         onClick={handleSwitchCamera}
@@ -211,7 +199,7 @@ export default function ZXingScanner({
                     </button>
                     {onClose && (
                         <button
-                            onClick={() => { stopAll(); onClose(); }}
+                            onClick={() => { stopScanner(); onClose(); }}
                             className="h-9 w-9 bg-black/50 backdrop-blur-sm rounded-xl flex items-center justify-center text-white"
                         >
                             <X className="w-4 h-4" />
