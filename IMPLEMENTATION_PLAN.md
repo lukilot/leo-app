@@ -1,87 +1,147 @@
-# LEO Platform - Implementation Plan: "Vision 2026"
-
-This plan outlines the architectural and UI upgrades required to transform LEO from a prototype into the comprehensive logistics ecosystem described in the Vision 2026 document.
-
-## 🏗️ Phase 1: Database & Data Architecture (The "Event System")
-
-LEO must transition from a static "parcel table" to a dynamic "event system."
-
-- [ ] **Schema Expansion (`schema.sql`):**
-    - Create `companies` table (DPD, DHL, InPost, etc.).
-    - Create `courier_profiles` to handle multi-company registration.
-    - Create `recipient_profiles` (IPO) with metadata for:
-        - Intercom codes, entrance instructions, floor numbers.
-        - Plan B preferences (Neighbor, Locker, Safe place).
-    - Create `package_events` log (Scanning, Start Route, Plan B Triggered).
-    - Add `delivery_window_start` / `delivery_window_end` (15-min slots).
-    - Add `company_id` to `packages` for multi-operator routing.
-
-## 🚚 Phase 2: Courier App - Operational Excellence
-
-Transform the courier experience into an automated, zero-friction loop.
-
-- [ ] **Onboarding & Multi-Company:**
-    - New registration flow to select one or multiple carriers.
-- [ ] **Route Management (`/courier/day`):**
-    - Implement the "Stabilize Route" logic (System Proposes -> Courier Adjusts -> Plan Generated).
-    - Calculation of 15-min slots based on traffic and average "at-door" time.
-- [ ] **The Scanner & Entry:**
-    - "Quick Add" form (Address + Phone).
-    - OCR/Camera Scanning placeholder implementation.
-- [ ] **Automation Panel:**
-    - Replace manual chats with "Command Buttons":
-        - `START ROUTE` (Triggers 15-min notifications).
-        - `PLAN B REQUEST` (Asks customer for decision).
-        - `LATE` (Recalculates following windows).
-
-## 🙎‍♂️ Phase 3: Customer App & IPO (The "Uber Effect")
-
-Focus on precise communication and self-service decisions.
-
-- [ ] **IPO Onboarding:**
-    - "Set up your profile" flow to save entrance codes and Plan B rules.
-- [ ] **Interactive Live Tracking (`/customer/live`):**
-    - "15 min before" activation logic.
-    - Simplified Decision Panel: "I'm home", "Use Plan B", "Change to Locker".
-- [ ] **Event-Driven UI:**
-    - Status updates that show "System knows..." (IPO-integrated hints).
-
-## 📡 Phase 4: Sztab Generalny (General Staff Panel)
-
-A high-level dashboard for managing the "Macro City."
-
-- [ ] **Live Map Layer:**
-    - Visualization of all active routes.
-    - Color-coding for "Risk" (Probability of missing a 15-min window).
-- [ ] **Operational Cockpit:**
-    - Heatmaps for "At-door time" and "Failed deliveries."
-    - "Volume Broker" recommendation engine (Manual triggers for MVP).
-
-## 🚛 Phase 5: Partner Flotowy (Fleet Manager Panel)
-Operational management for sub-contractors with multiple vehicles.
-
-- [ ] **Fleet Day KPI Dashboard:**
-    - Real-time tracking of COD (Pobrania), Quality, and Efficiency.
-- [ ] **Exception Control Center:**
-    - Grouped alerts for breakdowns, traffic, and address issues.
-- [ ] **Inter-Fleet Transfers:**
-    - UI to shift packages between couriers in 2 clicks.
-- [ ] **Competence Mapping:**
-    - "Mój rejon" integration to show which courier excels in specific zones.
-
-## 🛠️ Phase 6: Routing & Time Engine
-
-Implementation of core logistics algorithms.
-
-- [ ] **Window Engine:**
-    - Logic to propagate delays throughout the day.
-    - Automatic push notifications on window shifts.
+# LEO Platform — Architektura i Plan Implementacji
+## Vision 2026 MVP · Next.js 14 + Supabase + Mapbox
 
 ---
 
-## 🚦 Implementation Order
+## KROK 1: Schemat bazy danych — ZAKTUALIZOWANY ✅
 
-1.  **DB Upgrade:** Migrating the schema to support IPO and Multi-company.
-2.  **Courier Route Control:** Implementing the reordering and window generation.
-3.  **Customer Decision Panel:** Allowing customers to trigger Plan B.
-4.  **Sztab Generalny Map:** Visualizing the routes.
+Nowy `schema.sql` zawiera:
+
+| Tabela | Opis | Realtime? |
+|---|---|---|
+| `profiles` | Rozszerzenie auth.users (kurier, klient, dyspozytor) | ❌ |
+| `companies` | Operatorzy logistyczni (DPD, DHL, LEO Direct) | ❌ |
+| `sectors` | Rejony doręczeń (WWA-WOLA-01 etc.) | ❌ |
+| `routes` | Trasy dzienne kurierów (LEO Engine output) | ❌ |
+| `ipo_profiles` | Inteligentny Profil Odbiorcy + Plan B | ❌ |
+| `packages` | Paczki z pełnym state machine (15 statusów) | ❌ |
+| `package_events` | Event stream (immutable log) | ✅ **REALTIME** |
+| `courier_locations` | GPS beacon kuriera (upsert co 5s) | ✅ **REALTIME** |
+| `address_intelligence` | Nagromadzone dane o adresach | ❌ |
+| `exceptions` | Kolejka wyjątków dla dyspozytora | ❌ |
+| `sector_scores` | Wyniki/gamifikacja kurierów | ❌ |
+
+**RLS Policies:** Każda tabela ma szczegółowe polityki widoczności (kurier widzi swoje, klient widzi swoje, dyspozytor widzi wszystko).
+
+---
+
+## KROK 2: Struktura katalogów Next.js 14 (App Router)
+
+```
+leo-core/
+├── app/
+│   │
+│   ├── (auth)/                         # Shared auth group
+│   │   ├── login/page.tsx              ⚠️ TODO
+│   │   └── layout.tsx
+│   │
+│   ├── courier/                        # APLIKACJA KURIERA
+│   │   ├── day/page.tsx                ✅ DONE — Lista paczek + Plan/Mapa/Inbox
+│   │   ├── route/page.tsx              ⚠️ TODO — Mapa Mapbox + drag&drop kolejność
+│   │   ├── stop/[id]/page.tsx          ✅ DONE — Widok pojedynczego stopu
+│   │   ├── stop/[id]/scan/page.tsx     ⚠️ TODO — ZXing scanner
+│   │   ├── stop/[id]/exception/page.tsx ⚠️ TODO — Zgłaszanie wyjątku
+│   │   ├── region/page.tsx             ⚠️ TODO — Rejon i wyniki dzienne
+│   │   ├── messages/page.tsx           ✅ DONE — Inbox
+│   │   ├── onboarding/page.tsx         ✅ DONE
+│   │   └── profile/page.tsx            ⚠️ TODO
+│   │
+│   ├── customer/                       # APLIKACJA KLIENTA
+│   │   ├── packages/page.tsx           ✅ DONE — Lista + Mapa punktów + Zwroty
+│   │   ├── live/page.tsx               ✅ DONE — Live tracking (Mapbox fullscreen)
+│   │   ├── account/page.tsx            ⚠️ TODO — IPO + Plan B settings
+│   │   ├── onboarding/page.tsx         ⚠️ TODO
+│   │   └── profile/page.tsx            ⚠️ TODO
+│   │
+│   ├── dispatch/                       # PANEL DYSPOZYTORA (Desktop)
+│   │   ├── page.tsx                    ✅ DONE — Sztab Generalny (Mapa + Wyjątki)
+│   │   └── fleet/page.tsx              ✅ DONE — Partner Flotowy
+│   │
+│   ├── ops/page.tsx                    ✅ DONE — Dyspozytor mobilny
+│   ├── cx/page.tsx                     ✅ DONE — CX Support
+│   ├── exec/page.tsx                   ✅ DONE — Panel zarządu
+│   ├── engineering/page.tsx            ✅ DONE
+│   ├── warehouse/mobile/page.tsx       ⚠️ TODO
+│   └── page.tsx                        ✅ DONE — Landing / Role selector
+│
+├── components/
+│   ├── LEOMap.tsx                      ✅ DONE — Mapbox wrapper (tactical/consumer)
+│   ├── ui/                             ✅ DONE — shadcn button, card
+│   ├── ZXingScanner.tsx                ⚠️ TODO — QR/Barcode scanner
+│   ├── RealtimeProvider.tsx            ⚠️ TODO — Supabase Realtime context
+│   ├── DeliveryWindow.tsx              ⚠️ TODO — 15-min countdown widget
+│   └── PlanBModal.tsx                  ⚠️ TODO — Unified Plan B selection
+│
+├── lib/
+│   ├── supabaseClient.ts               ✅ DONE
+│   ├── utils.ts                        ✅ DONE
+│   ├── leo-engine.ts                   ⚠️ TODO — Obliczanie okien 15-min
+│   ├── fcm.ts                          ⚠️ TODO — Firebase push notifications
+│   └── address-intelligence.ts        ⚠️ TODO — Normalizacja adresów
+│
+├── app/api/                            # Next.js API Routes (LEO Engine)
+│   ├── leo-engine/
+│   │   ├── calculate-route/route.ts    ⚠️ TODO — Mapbox Matrix API
+│   │   └── recalculate-windows/route.ts ⚠️ TODO — Po każdym opóźnieniu
+│   ├── packages/[id]/
+│   │   ├── deliver/route.ts            ⚠️ TODO — POST: potwierdź doręczenie
+│   │   └── plan-b/route.ts             ⚠️ TODO — POST: aktywuj Plan B
+│   └── webhooks/
+│       └── przelewy24/route.ts         ⚠️ TODO — COD payment callback
+│
+├── schema.sql                          ✅ UPDATED — Pełny schema v2
+├── .env.local                          ✅ DONE
+└── package.json                        ✅ DONE
+```
+
+---
+
+## KROK 3: Mapa zależności (co od czego zależy)
+
+```
+[Supabase Auth] → [profiles table]
+                ↓
+         [packages table] ← [routes table] ← [LEO Engine API]
+                ↓                                    ↑
+      [package_events]  ←—————— Courier App ————————┘
+           ↓
+    [Supabase Realtime] → [Customer App: live tracking]
+                       → [Dispatcher: exception queue]
+                       → [FCM: push "15 min before"]
+```
+
+---
+
+## KOLEJNOŚĆ IMPLEMENTACJI (Rekomendacja)
+
+### Sprint 1 — Rdzeń operacyjny (kurier)
+1. **ZXingScanner** — skanowanie paczek w `courier/stop/[id]/scan/`
+2. **`package_events` INSERT** — logowanie zdarzeń (scanned, at_door, delivered)
+3. **Supabase status update** — po każdym zdarzeniu aktualizuj `packages.status`
+
+### Sprint 2 — Event-Driven Core
+4. **RealtimeProvider** — Supabase Realtime subscription na `package_events`
+5. **DeliveryWindow** — widget odliczający do okna 15-min (dla klienta)
+6. **Push notification** — FCM "15 min before" triggered by `approaching_15min` event
+
+### Sprint 3 — LEO Engine
+7. **`/api/leo-engine/calculate-route`** — Mapbox Matrix API → kolejność stops
+8. **`/api/leo-engine/recalculate-windows`** — po opóźnieniu aktualizuj okna i wywołaj eventy
+
+### Sprint 4 — Płatności i Zwroty
+9. **Przelewy24 + BLIK** — COD flow w aplikacji klienta
+10. **Label-less Return** — generowanie kodu zwrotu
+
+---
+
+## PYTANIE DO CIEBIE:
+
+Od czego zaczynamy szczegółowy kod?
+
+- **A) ZXingScanner** — integracja skanera QR/barcode w aplikacji kuriera
+- **B) Supabase Realtime** — `RealtimeProvider`, live tracking, powiadomienia
+- **C) LEO Engine API** — `/api/leo-engine/calculate-route` z Mapbox Matrix
+- **D) Widok `courier/route`** — mapa z drag&drop i nawigacją
+- **E) Auth flow** — logowanie kuriera/klienta z Supabase Auth i przekierowanie do odpowiedniej roli
+- **F) Przelewy24** — integracja dla płatności COD/BLIK
+

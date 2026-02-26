@@ -1,197 +1,126 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Truck, User, Shield, Lock, Loader2, MapPin, BrainCircuit, Calendar, CheckCircle } from "lucide-react";
-import { BottomNav } from "@/components/layout/BottomNav";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { ArrowLeft, Truck, Clock, ShieldCheck, MessageSquare, Phone, Info, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/lib/supabaseClient";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import LEOMap from "@/components/LEOMap";
 
-interface PackageData {
-    id: string;
-    tracking_number: string;
-    recipient_name: string;
-    status: string;
-    estimated_delivery_time: string;
-    window_start: string | null;
-    window_end: string | null;
-    plan_b_choice: string | null;
-    ipo_instructions?: string;
-    current_delay_minutes?: number;
-}
-
-function LiveTrackingContent() {
-    const searchParams = useSearchParams();
-    const trackingNumber = searchParams.get("tracking");
-
+export default function CustomerLiveTracking() {
+    const [progress, setProgress] = useState(0);
     const [showPlanB, setShowPlanB] = useState(false);
-    const [pkg, setPkg] = useState<PackageData | null>(null);
-    const [loading, setLoading] = useState(true);
 
-    const fetchPackage = async () => {
-        if (!trackingNumber) {
-            setLoading(false);
-            return;
-        }
+    // Simulate Courier Movement
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setProgress(prev => (prev < 100 ? prev + 0.1 : 0));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
-        try {
-            const { data } = await supabase
-                .from('packages')
-                .select('*')
-                .eq('tracking_number', trackingNumber)
-                .single();
-
-            if (data) {
-                setPkg(data as PackageData);
-            }
-        } catch (e) {
-            console.error("Fetch error:", e);
-        } finally {
-            setLoading(false);
-        }
+    // Simulated Route Coords (Warsaw Wola to Center)
+    const courierPos = {
+        latitude: 52.235 - (progress * 0.0001),
+        longitude: 21.005 + (progress * 0.0002)
     };
 
-    useEffect(() => {
-        fetchPackage();
-        // Safety: ensure loader disappears
-        const safety = setTimeout(() => {
-            setLoading(false);
-            if (!pkg && (trackingNumber === 'mock' || !trackingNumber)) {
-                setPkg({
-                    id: 'mock-live',
-                    tracking_number: trackingNumber || 'LEO-LIVE-MOCK',
-                    recipient_name: 'Tomasz Testowy',
-                    status: 'in_transit',
-                    estimated_delivery_time: new Date().toISOString(),
-                    window_start: null,
-                    window_end: null,
-                    plan_b_choice: null,
-                    ipo_instructions: 'Klatka B, kod 1234. Kurier widzi Twoje wskazówki.'
-                });
-            }
-        }, 2500);
-        const interval = setInterval(fetchPackage, 10000);
-        return () => { clearInterval(interval); clearTimeout(safety); };
-    }, [trackingNumber]);
-
-    async function handlePlanBChoice(choice: string) {
-        if (!pkg) return;
-        const { error } = await supabase
-            .from('packages')
-            .update({ plan_b_choice: choice })
-            .eq('id', pkg.id);
-
-        if (!error) {
-            setPkg({ ...pkg, plan_b_choice: choice });
-            setShowPlanB(false);
-        }
-    }
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#F5F5F4] flex flex-col items-center justify-center pb-24 font-sans">
-                <Loader2 className="w-10 h-10 animate-spin text-leo-primary mb-4" />
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-leo-gray-400">Namierzanie LEO...</p>
-                <BottomNav />
-            </div>
-        );
-    }
-
-    if (!pkg) {
-        return (
-            <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 text-center font-sans">
-                <h2 className="text-xl font-black text-leo-primary uppercase">Nie znaleziono</h2>
-                <p className="text-gray-400 mt-2 text-sm font-medium">Błędny numer śledzenia.</p>
-                <BottomNav />
-            </div>
-        );
-    }
-
-    const windowStart = pkg.window_start ? new Date(pkg.window_start) : new Date(pkg.estimated_delivery_time);
-    const windowEnd = pkg.window_end ? new Date(pkg.window_end) : new Date(windowStart.getTime() + 15 * 60000);
-    const startTime = windowStart.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-    const endTime = windowEnd.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-
     return (
-        <div className="min-h-screen bg-[#F5F5F4] pb-24 font-sans">
-            <header className="px-5 pt-14 pb-4 sticky top-0 z-10 bg-white/80 backdrop-blur-md flex items-center justify-between border-b border-gray-100">
-                <button onClick={() => window.history.back()} className="h-10 w-10 flex items-center justify-center rounded-full bg-gray-50 text-gray-900 border border-gray-100">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-                </button>
-                <h1 className="text-[14px] font-black uppercase tracking-widest text-gray-900">Mapa Live</h1>
-                <div className="w-10" />
+        <div className="min-h-screen bg-white font-sans selection:bg-leo-primary/10 overflow-hidden flex flex-col">
+            {/* FULL SCREEN MAP BACKGROUND */}
+            <div className="absolute inset-0 z-0">
+                <LEOMap
+                    theme="consumer"
+                    initialViewState={{
+                        latitude: 52.232,
+                        longitude: 21.01,
+                        zoom: 14.5
+                    }}
+                    markers={[
+                        { id: 'courier', latitude: courierPos.latitude, longitude: courierPos.longitude, type: 'user', label: 'Kurier Łukasz' },
+                        { id: 'destination', latitude: 52.2297, longitude: 21.0122, type: 'stop', label: 'Mój Dom' }
+                    ]}
+                />
+            </div>
+
+            {/* OVERLAY UI: HEADER */}
+            <header className="relative z-10 px-6 pt-16 pb-6 bg-gradient-to-b from-white/90 to-transparent flex items-center gap-4">
+                <Link href="/customer/packages">
+                    <Button variant="ghost" className="h-12 w-12 rounded-2xl bg-white shadow-xl shadow-black/5 border border-gray-100 flex items-center justify-center">
+                        <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                </Link>
+                <div className="flex-1">
+                    <h1 className="text-[18px] font-black tracking-tighter uppercase italic leading-none">Status <span className="text-leo-primary">Live</span></h1>
+                    <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[9px] font-black uppercase text-gray-400 tracking-widest italic">LEO-9921-X • W Doręczeniu</span>
+                    </div>
+                </div>
             </header>
 
-            <main className="px-5 space-y-6 pt-6">
-                <div className="bg-[#E5E7EB] rounded-[32px] h-[300px] relative overflow-hidden shadow-inner border border-black/5">
-                    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #000 1px, transparent 0)", backgroundSize: "24px 24px" }} />
-                    <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="absolute inset-0 flex items-center justify-center">
-                        <MapPin className="w-12 h-12 text-leo-primary animate-bounce" />
-                    </motion.div>
-                </div>
-
-                <div className="flex flex-col items-center -mt-12 relative z-10 space-y-3">
-                    <div className="bg-leo-primary text-white rounded-full px-10 py-4 shadow-xl border-4 border-white">
-                        <span className="text-lg font-black uppercase tracking-tight">Za 15-20 min</span>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-[28px] p-6 shadow-sm border border-gray-100 mt-4">
-                    <div className="flex items-start gap-4 mb-6">
-                        <div className="bg-leo-accent/30 p-3 rounded-2xl">
-                            <BrainCircuit className="w-6 h-6 text-leo-primary" />
+            {/* OVERLAY UI: BOTTOM CARD */}
+            <div className="mt-auto relative z-10 p-6">
+                <motion.div
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="bg-black text-white rounded-[40px] p-8 space-y-8 shadow-3xl border border-white/10"
+                >
+                    <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                            <div className="text-[10px] font-black text-leo-primary uppercase tracking-[0.3em] italic">Prognoza Doręczenia</div>
+                            <div className="text-4xl font-black italic tracking-tighter">14:18 (Za 12 min)</div>
                         </div>
-                        <div>
-                            <h3 className="font-black uppercase text-[10px] tracking-widest text-gray-400 mb-1">System LEO wie:</h3>
-                            <p className="text-[14px] font-bold text-gray-800 leading-snug">{pkg.ipo_instructions || "Klatka B, kod 1234. Kurier widzi Twoje wskazówki."}</p>
+                        <div className="h-16 w-16 bg-white/10 rounded-2xl flex items-center justify-center">
+                            <Truck className="w-8 h-8 text-leo-primary animate-bounce" />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <Button onClick={() => setShowPlanB(true)} variant="secondary" className="h-14 rounded-2xl bg-gray-50 font-black text-xs uppercase tracking-widest border-0">Plan B</Button>
-                        <Button className="h-14 rounded-2xl bg-leo-primary text-white font-black text-xs uppercase tracking-widest border-0">Puknij / Ring</Button>
+                    <div className="flex items-center gap-4 p-4 bg-white/5 rounded-3xl border border-white/5">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-leo-primary grayscale">
+                            <img src="https://i.pravatar.cc/150?u=lukas" alt="Courier" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1">
+                            <div className="text-[14px] font-black">Łukasz K.</div>
+                            <div className="text-[9px] font-black text-white/40 uppercase tracking-widest">Twoja 5-gwiazdkowa obsługa</div>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button className="h-10 w-10 p-0 rounded-xl bg-leo-primary text-black"><MessageSquare className="w-4 h-4" /></Button>
+                            <Button className="h-10 w-10 p-0 rounded-xl bg-white/10 text-white"><Phone className="w-4 h-4" /></Button>
+                        </div>
                     </div>
-                </div>
-            </main>
 
+                    <div className="grid grid-cols-2 gap-4">
+                        <Button onClick={() => setShowPlanB(true)} className="h-16 rounded-[2rem] bg-leo-primary text-black font-black uppercase tracking-widest text-[11px] border-0">Zmień na Plan B</Button>
+                        <Button className="h-16 rounded-[2rem] bg-white/5 text-white font-black uppercase tracking-widest text-[11px] border border-white/10">Szczegóły</Button>
+                    </div>
+
+                    <div className="flex justify-center items-center gap-2 pt-2 opacity-40">
+                        <ShieldCheck className="w-3 h-3 text-leo-primary" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">LEO Secured Vision 2026 Proto-Map</span>
+                    </div>
+                </motion.div>
+            </div>
+
+            {/* PLAN B DRAWER (Mini) */}
             <AnimatePresence>
                 {showPlanB && (
-                    <>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPlanB(false)} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]" />
-                        <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[40px] p-6 pb-12 z-[101]">
-                            <h3 className="text-xl font-black uppercase tracking-tight mb-6">Twój Plan B</h3>
-                            <div className="grid gap-3">
-                                {[
-                                    { id: 'neighbor', label: 'U sąsiada', icon: User },
-                                    { id: 'locker', label: 'Automat', icon: Lock },
-                                    { id: 'secure', label: 'Bezpieczne miejsce', icon: Shield },
-                                    { id: 'delay', label: 'Jutro', icon: Calendar }
-                                ].map((opt) => (
-                                    <button key={opt.id} onClick={() => handlePlanBChoice(opt.id)} className={cn("flex items-center justify-between p-5 rounded-3xl border-2 transition-all", pkg.plan_b_choice === opt.id ? "border-leo-primary bg-leo-accent/10" : "border-gray-50")}>
-                                        <div className="flex items-center gap-4 font-black text-sm uppercase tracking-tight">
-                                            <opt.icon className={cn("w-5 h-5", pkg.plan_b_choice === opt.id ? "text-leo-primary" : "text-gray-300")} />
-                                            {opt.label}
-                                        </div>
-                                        {pkg.plan_b_choice === opt.id && <CheckCircle className="w-5 h-5 text-leo-primary" />}
-                                    </button>
+                    <div className="fixed inset-0 z-[200] flex items-end justify-center">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPlanB(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                        <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} className="bg-white rounded-t-[48px] w-full p-10 relative z-10 shadow-3xl">
+                            <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-10" />
+                            <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-8">Zmień Instrukcję (Plan B)</h3>
+                            <div className="space-y-3">
+                                {['Sąsiad (nr 12)', 'Punkt LEO Hub', 'Przełóż na jutro'].map((opt, i) => (
+                                    <Button key={i} variant="ghost" className="w-full h-16 rounded-2xl bg-gray-50 border border-gray-100 flex justify-between px-6 text-[12px] font-black uppercase">
+                                        {opt} <Info className="w-4 h-4 opacity-20" />
+                                    </Button>
                                 ))}
                             </div>
+                            <Button onClick={() => setShowPlanB(false)} className="w-full h-16 rounded-[2rem] bg-black text-white mt-8 font-black uppercase tracking-widest">Potwierdź Zmianę</Button>
                         </motion.div>
-                    </>
+                    </div>
                 )}
             </AnimatePresence>
-
-            <BottomNav />
         </div>
-    );
-}
-
-export default function LiveTracking() {
-    return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-sans uppercase font-black tracking-widest text-leo-gray-400">Synchronizacja...</div>}>
-            <LiveTrackingContent />
-        </Suspense>
     );
 }

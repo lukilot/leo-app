@@ -4,14 +4,16 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
     Truck, ChevronRight, Loader2, Bell, User, CheckCircle, BrainCircuit,
-    Box, ShieldCheck, MapPin, Sparkles, Map, Calendar, Users, Home,
+    Box, ShieldCheck, MapPin, Sparkles, Map as MapIcon, Calendar, Users, Home,
     Smartphone, Search, ArrowRight, Settings, LogOut, PackageSearch,
-    RefreshCw, X, MessageSquare, ListFilter, ClipboardCheck
+    RefreshCw, X, MessageSquare, ListFilter, ClipboardCheck, ArrowLeft, ArrowRightLeft,
+    Navigation as NavigationIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
+import LEOMap from "@/components/LEOMap";
 
 interface PackageData {
     id: string;
@@ -30,7 +32,7 @@ export default function CustomerPackages() {
     const [loading, setLoading] = useState(true);
     const [showSettings, setShowSettings] = useState(false);
     const [showIPO, setShowIPO] = useState(false);
-    const [activePlanB, setActivePlanB] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'packages' | 'points' | 'returns'>('packages');
 
     const fetchPackages = async () => {
         try {
@@ -80,7 +82,11 @@ export default function CustomerPackages() {
                         TT
                     </div>
                     <div>
-                        <h1 className="text-[22px] font-black tracking-tighter text-gray-900 uppercase leading-none italic">MOJE <span className="text-leo-primary text-[24px]">PACZKI</span></h1>
+                        <h1 className="text-[22px] font-black tracking-tighter text-gray-900 uppercase leading-none italic">
+                            {activeTab === 'packages' && <>MOJE <span className="text-leo-primary">PACZKI</span></>}
+                            {activeTab === 'points' && <>MOJA <span className="text-leo-primary">MAPA</span></>}
+                            {activeTab === 'returns' && <>MOJE <span className="text-leo-primary">ZWROTY</span></>}
+                        </h1>
                         <div className="flex items-center gap-2 mt-1.5 grayscale opacity-60">
                             <ShieldCheck className="w-3 h-3 text-leo-primary" />
                             <span className="text-[8px] font-black uppercase tracking-widest">IPO: Aktywne • Vision 2026</span>
@@ -99,129 +105,191 @@ export default function CustomerPackages() {
             </header>
 
             <main className="px-6 pt-8 space-y-10">
-                {/* 1. IPO STATUS CARD (Mój Profil) */}
-                <section onClick={() => setShowIPO(true)} className="bg-white rounded-[40px] p-8 border border-white shadow-3xl shadow-gray-200/40 relative overflow-hidden group active:scale-98 transition-transform cursor-pointer">
-                    <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
-                        <User className="w-24 h-24" />
-                    </div>
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="h-3 w-3 bg-leo-primary rounded-full animate-pulse shadow-[0_0_10px_#FFD700]" />
-                            <span className="text-[10px] font-black text-leo-primary uppercase tracking-widest">Inteligentny Profil Odbiorcy</span>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-gray-300 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                    <h3 className="text-2xl font-black uppercase tracking-tighter italic text-gray-900 leading-none">Cześć, Tomasz.</h3>
-                    <p className="text-[12px] text-gray-400 mt-3 font-medium leading-relaxed">
-                        Twoje preferencje Planu B są <span className="text-black font-black underline decoration-leo-primary decoration-4">skonfigurowane</span>. System wie, gdzie zostawić paczkę pod Twoją nieobecność.
-                    </p>
-                </section>
+                {activeTab === 'packages' && (
+                    <>
+                        {/* 1. IPO STATUS CARD */}
+                        <section onClick={() => setShowIPO(true)} className="bg-white rounded-[40px] p-8 border border-white shadow-3xl shadow-gray-200/40 relative overflow-hidden group active:scale-98 transition-transform cursor-pointer">
+                            <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
+                                <User className="w-24 h-24" />
+                            </div>
+                            <div className="flex justify-between items-start mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-3 w-3 bg-leo-primary rounded-full animate-pulse shadow-[0_0_10px_#FFD700]" />
+                                    <span className="text-[10px] font-black text-leo-primary uppercase tracking-widest">Inteligentny Profil Odbiorcy</span>
+                                </div>
+                                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                            <h3 className="text-2xl font-black uppercase tracking-tighter italic text-gray-900 leading-none">Cześć, Tomasz.</h3>
+                            <p className="text-[12px] text-gray-400 mt-3 font-medium leading-relaxed">
+                                Twoje preferencje Planu B są <span className="text-black font-black underline decoration-leo-primary decoration-4">skonfigurowane</span>. System wie, gdzie zostawić paczkę pod Twoją nieobecność.
+                            </p>
+                        </section>
 
-                {/* 2. ACTIVE DELIVERY (LIVE TRACKING LINK) */}
-                <section className="space-y-6">
-                    <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-gray-400 italic">Dostawy w Toku</h2>
-                    <div className="space-y-4">
-                        {packages.filter(p => p.status !== 'delivered').map((pkg) => (
-                            <Link key={pkg.id} href="/customer/live" className="block">
-                                <motion.div
-                                    className="bg-black text-white rounded-[40px] p-8 space-y-8 shadow-2xl relative overflow-hidden group active:scale-[0.97] transition-transform"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-leo-primary/10 to-transparent" />
-                                    <div className="absolute top-0 right-0 p-8 opacity-5">
-                                        <Truck className="w-24 h-24" />
-                                    </div>
-                                    <div className="flex justify-between items-start relative z-10">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-leo-primary flex items-center gap-2">
-                                            <div className="w-1.5 h-1.5 bg-leo-primary rounded-full animate-pulse" />
-                                            Doręczenie Dziś
-                                        </div>
-                                        <span className="text-[14px] font-black font-mono tracking-tighter italic opacity-60">{pkg.tracking_number}</span>
-                                    </div>
-                                    <div className="space-y-2 relative z-10">
-                                        <div className="text-[11px] font-black text-white/40 uppercase tracking-widest">Moje okno 15-minutowe</div>
-                                        <div className="text-5xl font-black italic tracking-tighter text-leo-primary">14:15 - 14:30</div>
-                                    </div>
-                                    <div className="flex justify-between items-end relative z-10 pt-4 border-t border-white/10">
-                                        <div className="flex gap-3">
-                                            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white">
-                                                <Map className="w-5 h-5" />
+                        {/* 2. ACTIVE DELIVERY */}
+                        <section className="space-y-6">
+                            <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-gray-400 italic">Dostawy w Toku</h2>
+                            <div className="space-y-4">
+                                {packages.filter(p => p.status !== 'delivered').map((pkg) => (
+                                    <Link key={pkg.id} href="/customer/live" className="block">
+                                        <motion.div className="bg-black text-white rounded-[40px] p-8 space-y-8 shadow-2xl relative overflow-hidden group active:scale-[0.97] transition-transform">
+                                            <div className="absolute inset-0 bg-gradient-to-br from-leo-primary/10 to-transparent" />
+                                            <div className="absolute top-0 right-0 p-8 opacity-5">
+                                                <Truck className="w-24 h-24" />
+                                            </div>
+                                            <div className="flex justify-between items-start relative z-10">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-leo-primary flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 bg-leo-primary rounded-full animate-pulse" />
+                                                    Doręczenie Dziś
+                                                </div>
+                                                <span className="text-[14px] font-black font-mono tracking-tighter italic opacity-60">{pkg.tracking_number}</span>
+                                            </div>
+                                            <div className="space-y-2 relative z-10">
+                                                <div className="text-[11px] font-black text-white/40 uppercase tracking-widest">Moje okno 15-minutowe</div>
+                                                <div className="text-5xl font-black italic tracking-tighter text-leo-primary">14:15 - 14:30</div>
+                                            </div>
+                                            <div className="flex justify-between items-end relative z-10 pt-4 border-t border-white/10">
+                                                <div className="flex gap-3">
+                                                    <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white">
+                                                        <MapIcon className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-[13px] font-black uppercase leading-none">{pkg.sender}</div>
+                                                        <div className="text-[9px] font-black text-white/40 uppercase tracking-widest mt-1.5">Kliknij, by śledzić live</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-[9px] font-black text-leo-primary uppercase tracking-widest mb-1 italic">Plan B: Aktywny</div>
+                                                    <div className="text-[13px] font-black uppercase opacity-60">U sąsiada</div>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* 3. HISTORY */}
+                        <section className="space-y-6">
+                            <div className="flex justify-between items-end px-1">
+                                <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-gray-400 italic">Ostatnio Odebrane</h2>
+                                <button className="text-[10px] font-black text-leo-primary uppercase tracking-widest border-b-2 border-leo-primary/20 pb-0.5">Wszystkie</button>
+                            </div>
+                            <div className="grid gap-4">
+                                {packages.filter(p => p.status === 'delivered').map((pkg) => (
+                                    <div key={pkg.id} className="bg-white rounded-[32px] p-6 border border-gray-100 flex items-center justify-between shadow-sm group">
+                                        <div className="flex items-center gap-5">
+                                            <div className="w-14 h-14 bg-gray-50 rounded-[22px] flex items-center justify-center text-green-500 border border-gray-100 shadow-inner">
+                                                <CheckCircle className="w-6 h-6" />
                                             </div>
                                             <div>
-                                                <div className="text-[13px] font-black uppercase leading-none">{pkg.sender}</div>
-                                                <div className="text-[9px] font-black text-white/40 uppercase tracking-widest mt-1.5">Kliknij, by śledzić live</div>
+                                                <div className="text-[15px] font-black text-black leading-none uppercase italic tracking-tighter">{pkg.sender}</div>
+                                                <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-2">Dostarczono wczoraj, 12:42</div>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="text-[9px] font-black text-leo-primary uppercase tracking-widest mb-1 italic">Plan B: Aktywny</div>
-                                            <div className="text-[13px] font-black uppercase opacity-60">U sąsiada</div>
-                                        </div>
+                                        <Button variant="ghost" className="h-10 px-4 rounded-xl bg-gray-50 text-[10px] font-black uppercase tracking-widest text-[#1A1A1A] hover:bg-leo-primary hover:text-black transition-all">Zwrot</Button>
                                     </div>
-                                </motion.div>
-                            </Link>
-                        ))}
-                    </div>
-                </section>
+                                ))}
+                            </div>
+                        </section>
+                    </>
+                )}
 
-                {/* 3. HISTORY & RETURNS */}
-                <section className="space-y-6">
-                    <div className="flex justify-between items-end px-1">
-                        <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-gray-400 italic">Ostatnio Odebrane</h2>
-                        <button className="text-[10px] font-black text-leo-primary uppercase tracking-widest border-b-2 border-leo-primary/20 pb-0.5">Wszystkie</button>
-                    </div>
-                    <div className="grid gap-4">
-                        {packages.filter(p => p.status === 'delivered').map((pkg) => (
-                            <div key={pkg.id} className="bg-white rounded-[32px] p-6 border border-gray-100 flex items-center justify-between shadow-sm group">
-                                <div className="flex items-center gap-5">
-                                    <div className="w-14 h-14 bg-gray-50 rounded-[22px] flex items-center justify-center text-green-500 border border-gray-100 shadow-inner">
-                                        <CheckCircle className="w-6 h-6" />
+                {activeTab === 'points' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                        <section className="bg-white rounded-[40px] p-4 border border-white shadow-3xl relative overflow-hidden h-[450px]">
+                            <LEOMap
+                                theme="consumer"
+                                markers={[
+                                    { id: 'hub-04', latitude: 52.235, longitude: 21.012, label: 'HUB WWA-04', type: 'hub' },
+                                    { id: 'point-wola', latitude: 52.228, longitude: 21.018, label: 'Punkt LEO Wola', type: 'hub' },
+                                    { id: 'zabka-leo', latitude: 52.232, longitude: 20.998, label: 'Zabka LEO', type: 'hub' }
+                                ]}
+                                initialViewState={{
+                                    latitude: 52.23,
+                                    longitude: 21.01,
+                                    zoom: 13
+                                }}
+                            />
+
+                            <div className="absolute bottom-6 left-6 right-6 p-6 bg-white/90 backdrop-blur-xl rounded-3xl border border-gray-100 shadow-2xl space-y-4 z-10">
+                                <div className="flex justify-between items-center">
+                                    <h4 className="text-[12px] font-black uppercase tracking-tighter">Najbliższy punkt LEO</h4>
+                                    <span className="text-[10px] font-black text-leo-primary uppercase">Czynne do 22:00</span>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="flex-1 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                        <div className="text-[10px] font-black text-gray-400 uppercase mb-1">Dystans</div>
+                                        <div className="text-[16px] font-black italic italic">400 m</div>
                                     </div>
-                                    <div>
-                                        <div className="text-[15px] font-black text-black leading-none uppercase italic tracking-tighter">{pkg.sender}</div>
-                                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-2">Dostarczono wczoraj, 12:42</div>
+                                    <div className="flex-1 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                        <div className="text-[10px] font-black text-gray-400 uppercase mb-1">Miejsca</div>
+                                        <div className="text-[16px] font-black italic italic">12 Free</div>
                                     </div>
                                 </div>
-                                <Button variant="ghost" className="h-10 px-4 rounded-xl bg-gray-50 text-[10px] font-black uppercase tracking-widest text-[#1A1A1A] hover:bg-leo-primary hover:text-black transition-all">Zwrot</Button>
                             </div>
-                        ))}
-                    </div>
-                </section>
+                        </section>
 
-                {/* 4. QUICK ACTION DOCK (Plan B Global) */}
-                <section className="bg-gray-100/50 rounded-[40px] p-10 border border-gray-200/50 space-y-6">
-                    <h3 className="text-[14px] font-black uppercase tracking-tighter italic text-black leading-none">Automatyczny Plan B</h3>
-                    <p className="text-[11px] text-gray-500 uppercase tracking-tight leading-relaxed font-medium">Gdzie kurier ma zostawić paczkę, gdy nie zdążysz odebrać?</p>
-                    <div className="grid grid-cols-2 gap-3">
-                        {[
-                            { label: 'Sąsiad', icon: Users, active: true },
-                            { label: 'Punkt LEO', icon: MapPin, active: false },
-                            { label: 'Garaż / Kod', icon: Home, active: false },
-                            { label: 'Zmiana daty', icon: Calendar, active: false },
-                        ].map((btn, i) => (
-                            <button key={i} className={cn(
-                                "h-20 rounded-3xl flex flex-col items-center justify-center gap-2 border-2 transition-all active:scale-95",
-                                btn.active ? "bg-black border-black text-leo-primary" : "bg-white border-gray-100 text-gray-400 grayscale"
-                            )}>
-                                <btn.icon className="w-5 h-5" />
-                                <span className="text-[9px] font-black uppercase tracking-widest">{btn.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                </section>
+                        <section className="bg-white rounded-[40px] p-8 space-y-6">
+                            <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-400 italic">Planowanie Odbioru</h3>
+                            <div className="grid grid-cols-1 gap-3">
+                                <Button className="h-14 bg-black text-white rounded-2xl text-[11px] font-black uppercase tracking-widest border-0 flex gap-2">
+                                    <NavigationIcon className="w-4 h-4 text-leo-primary" /> Prowadź do najbliższego punktu
+                                </Button>
+                            </div>
+                        </section>
+                    </motion.div>
+                )}
+
+                {activeTab === 'returns' && (
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-8 flex-1">
+                        <div className="bg-white rounded-[40px] p-10 border border-gray-100 shadow-3xl text-center space-y-8">
+                            <div className="w-20 h-20 bg-leo-primary/10 rounded-[32px] flex items-center justify-center mx-auto">
+                                <RefreshCw className="w-10 h-10 text-leo-primary" />
+                            </div>
+                            <div className="space-y-3">
+                                <h2 className="text-3xl font-black uppercase tracking-tighter italic leading-none">Nadaj Zwrot <br />Bez Etykiety</h2>
+                                <p className="text-[12px] text-gray-400 font-medium leading-relaxed">System Vision 2026 pozwala na zwrot w 3 sekundy. Wygeneruj kod i zostaw paczkę w dowolnym punkcie LEO.</p>
+                            </div>
+                            <Button className="w-full h-18 rounded-3xl bg-black text-white text-[14px] font-black uppercase tracking-widest shadow-2xl border-0 py-6">Generuj Kod Zwrotu</Button>
+                        </div>
+
+                        <div className="space-y-6">
+                            <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-gray-400 italic">Oczekujące na zwrot</h3>
+                            <div className="bg-white rounded-[40px] p-8 border border-gray-100 flex items-center justify-between opacity-40">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center">
+                                        <ArrowRightLeft className="w-5 h-5 text-gray-300" />
+                                    </div>
+                                    <div className="text-[14px] font-black uppercase text-gray-400 italic">Brak aktywnych zwrotów</div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
             </main>
 
             {/* DOCK NAVIGATION (MOBILE) */}
-            <div className="fixed bottom-10 left-6 right-6 z-[100] bg-white text-black px-8 py-5 rounded-[2.5rem] shadow-3xl flex justify-between items-center border-[4px] border-white">
-                <button className="flex flex-col items-center gap-1.5">
-                    <Box className="w-6 h-6 text-leo-primary" />
+            <div className="fixed bottom-10 left-6 right-6 z-[100] bg-white text-black px-8 py-5 rounded-[2.5rem] shadow-3xl shadow-gray-200/50 flex justify-between items-center border-[4px] border-white">
+                <button
+                    onClick={() => setActiveTab('packages')}
+                    className={cn("flex flex-col items-center gap-1.5 transition-all", activeTab === 'packages' ? "text-leo-primary scale-110" : "text-gray-300")}
+                >
+                    <Box className="w-6 h-6" />
                     <span className="text-[8px] font-black uppercase tracking-widest">Paczki</span>
                 </button>
                 <div className="h-10 w-[1px] bg-gray-100" />
-                <button className="flex flex-col items-center gap-1.5 opacity-40">
+                <button
+                    onClick={() => setActiveTab('points')}
+                    className={cn("flex flex-col items-center gap-1.5 transition-all", activeTab === 'points' ? "text-leo-primary scale-110" : "text-gray-300")}
+                >
                     <MapPin className="w-6 h-6" />
                     <span className="text-[8px] font-black uppercase tracking-widest">Punkty</span>
                 </button>
                 <div className="h-10 w-[1px] bg-gray-100" />
-                <button className="flex flex-col items-center gap-1.5 opacity-40">
+                <button
+                    onClick={() => setActiveTab('returns')}
+                    className={cn("flex flex-col items-center gap-1.5 transition-all", activeTab === 'returns' ? "text-leo-primary scale-110" : "text-gray-300")}
+                >
                     <RefreshCw className="w-6 h-6" />
                     <span className="text-[8px] font-black uppercase tracking-widest">Zwroty</span>
                 </button>
@@ -270,7 +338,7 @@ export default function CustomerPackages() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-6">
+                                <div className="space-y-6 overflow-hidden">
                                     <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-gray-300">Zapisane Adresy</h4>
                                     <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
                                         {['Dom (WWA)', 'Biuro (Sienna)', 'Rodzice'].map((adr, i) => (
@@ -281,47 +349,15 @@ export default function CustomerPackages() {
                                         ))}
                                     </div>
                                 </div>
-
-                                <div className="pt-6 border-t border-gray-100">
-                                    <Button onClick={() => setShowIPO(false)} className="w-full h-16 rounded-[2.5rem] bg-leo-primary text-black font-black uppercase tracking-widest text-[13px] border-0 shadow-lg shadow-leo-primary/20">Wszystko Jasne</Button>
-                                </div>
                             </div>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
 
-            {/* SETTINGS/LOGOUT */}
-            <AnimatePresence>
-                {showSettings && (
-                    <div className="fixed inset-0 z-[200] flex items-end justify-center p-6">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettings(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-                        <motion.div initial={{ y: "100%", scale: 0.95 }} animate={{ y: 0, scale: 1 }} exit={{ y: "100%", scale: 0.95 }} className="bg-white rounded-[48px] w-full max-w-sm p-10 relative z-10 shadow-3xl">
-                            <div className="space-y-6 text-center">
-                                <div className="w-20 h-20 bg-gray-50 rounded-[32px] flex items-center justify-center mx-auto border border-gray-100 shadow-inner">
-                                    <PackageSearch className="w-10 h-10 text-leo-primary" />
-                                </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-2xl font-black uppercase tracking-tighter italic text-black leading-none">Settings</h3>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">LEO Portal v1.0.4-Vision2026</p>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Button onClick={() => setShowSettings(false)} className="w-full h-14 rounded-2xl bg-black text-white font-black uppercase tracking-widest text-[11px] border-0">Zmiana numeru tel.</Button>
-                                    <Button onClick={() => setShowSettings(false)} variant="ghost" className="w-full h-14 rounded-2xl bg-white text-red-600 border border-red-100 font-black uppercase tracking-widest text-[11px] flex gap-3">Wyloguj <LogOut className="w-4 h-4" /></Button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-
-            {/* Design Credit */}
             <div className="text-center pt-8 pb-32">
                 <p className="text-[7px] font-black uppercase tracking-[0.2em] text-leo-primary opacity-30 italic">Design and execution by lukilot.work</p>
             </div>
-
-            {/* Grain Overlay */}
-            <div className="fixed inset-0 pointer-events-none z-[110] opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #111 1px, transparent 0)", backgroundSize: "32px 32px" }} />
         </div>
     );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-    Activity, Bell, Map, ChevronRight, Zap, ListChecks,
+    Activity, Bell, Map as MapIcon, ChevronRight, Zap, ListChecks,
     ArrowRightLeft, AlertCircle, Share2, Layers, LayoutGrid,
     MessageSquare, CheckCircle2, MoreVertical, Search, Filter,
     RefreshCw, Users, ShieldAlert, BrainCircuit, Loader2, X
@@ -10,6 +10,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import LEOMap from "@/components/LEOMap";
 
 export default function OperationsMobile() {
     const [loading, setLoading] = useState(true);
@@ -142,9 +143,23 @@ export default function OperationsMobile() {
 
                 {activeTab === 'regions' && (
                     <div className="space-y-6">
+                        <div className="h-64 w-full relative overflow-hidden rounded-[2.5rem] border-4 border-white shadow-2xl">
+                            <LEOMap
+                                theme="tactical"
+                                markers={[
+                                    { id: 'reg-01', latitude: 52.23, longitude: 21.01, label: 'WWA CENTRAL', type: 'hub' },
+                                    { id: 'reg-02', latitude: 52.24, longitude: 20.98, label: 'WWA WOLA', type: 'hub' }
+                                ]}
+                                initialViewState={{
+                                    latitude: 52.235,
+                                    longitude: 21.00,
+                                    zoom: 11
+                                }}
+                            />
+                        </div>
                         <div className="flex justify-between items-end px-1">
                             <h2 className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-400 italic">Podgląd Rejonów Live</h2>
-                            <button className="text-[9px] font-black text-leo-primary uppercase tracking-widest flex items-center gap-2"><Map className="w-3 h-3" /> Mapa Głębi</button>
+                            <button className="text-[9px] font-black text-leo-primary uppercase tracking-widest flex items-center gap-2"><MapIcon className="w-3 h-3" /> Mapa Głębi</button>
                         </div>
 
                         <div className="grid gap-4">
@@ -242,7 +257,7 @@ export default function OperationsMobile() {
                 </button>
                 <div className="h-10 w-[1px] bg-white/10" />
                 <button className="flex flex-col items-center gap-1.5 opacity-40">
-                    <Map className="w-5 h-5" />
+                    <MapIcon className="w-5 h-5" />
                     <span className="text-[8px] font-black uppercase tracking-widest">Tact-Map</span>
                 </button>
                 <div className="h-10 w-[1px] bg-white/10" />
