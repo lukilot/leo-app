@@ -1,41 +1,97 @@
--- 1. Create a table for Packages
-create table if not exists packages (
+-- LEO Platform - Vision 2026 Database Schema
+
+-- 1. Companies (Logistics Providers)
+create table if not exists companies (
   id uuid default gen_random_uuid() primary key,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  tracking_number text unique not null,
-  courier_id uuid references auth.users(id),
-  recipient_name text not null,
-  recipient_address text not null,
-  status text check (status in ('pending', 'in_transit', 'delivered', 'failed')) default 'pending',
-  estimated_delivery_time timestamp with time zone,
-  geo_lat double precision,
-  geo_lng double precision,
-  notes text,
-  plan_b_choice text -- e.g., 'door', 'neighbor', 'access_point'
+  name text not null unique, -- DPD, DHL, InPost, LEO B2C
+  logo_url text,
+  created_at timestamp with time zone default now()
 );
 
--- 2. Enable Row Level Security (RLS)
+-- 2. Recipient Profiles (IPO - Intelligent Patient Order)
+create table if not exists recipient_profiles (
+  id uuid default gen_random_uuid() primary key,
+  phone text unique,
+  email text unique,
+  full_name text,
+  
+  -- IPO Intelligent Data
+  intercom_code text,
+  entrance_instructions text, -- "Entry from the yard", "Gate B"
+  floor_number text,
+  has_elevator boolean default true,
+  
+  -- Plan B Preferences
+  default_plan_b text check (default_plan_b in ('door', 'neighbor', 'locker', 'pudo', 'delay')),
+  plan_b_metadata jsonb, -- { "neighbor_phone": "...", "locker_id": "..." }
+  
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- 3. Packages (Enhanced)
+create table if not exists packages (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamp with time zone default now(),
+  tracking_number text unique not null,
+  company_id uuid references companies(id),
+  courier_id uuid references auth.users(id),
+  recipient_profile_id uuid references recipient_profiles(id),
+  
+  -- Recipient Info (Fallback if no IPO)
+  recipient_name text not null,
+  recipient_address text not null,
+  recipient_phone text,
+  
+  -- Status & Tracking
+  status text check (status in ('pending', 'sorted', 'in_transit', 'delivered', 'failed', 'returned')) default 'pending',
+  sub_status text, -- "At the door", "Delayed by traffic"
+  
+  -- Delivery Windows (15-min slots)
+  window_start timestamp with time zone,
+  window_end timestamp with time zone,
+  
+  -- Location (Destination)
+  geo_lat double precision,
+  geo_lng double precision,
+  
+  -- Plan B logic
+  current_plan_b text, 
+  is_plan_b_active boolean default false,
+  
+  metadata jsonb -- For any extra firm-specific data
+);
+
+-- 4. Package Events (System of Events)
+create table if not exists package_events (
+  id uuid default gen_random_uuid() primary key,
+  package_id uuid references packages(id),
+  event_type text not null, -- 'scanned', 'route_start', 'near_delivery', 'plan_b_triggered', 'delivered'
+  payload jsonb,
+  created_at timestamp with time zone default now()
+);
+
+-- 5. Courier Real-time Status
+create table if not exists courier_status (
+  courier_id uuid references auth.users(id) primary key,
+  current_lat double precision,
+  current_lng double precision,
+  speed double precision,
+  battery_level int,
+  last_updated timestamp with time zone default now()
+);
+
+-- RLS & Policies (Selective Visibility)
+
+alter table companies enable row level security;
+alter table recipient_profiles enable row level security;
 alter table packages enable row level security;
+alter table package_events enable row level security;
+alter table courier_status enable row level security;
 
--- 3. Create Policies
--- Couriers can see packages assigned to them
-create policy "Couriers can view assigned packages"
-  on packages for select
-  using (auth.uid() = courier_id);
+-- Global Read for Demo (Simplification)
+create policy "Allow public read for demo" on packages for select using (true);
+create policy "Allow public read for IPO" on recipient_profiles for select using (true);
 
--- Couriers can update status of assigned packages
-create policy "Couriers can update assigned packages"
-  on packages for update
-  using (auth.uid() = courier_id);
-
--- (For demo purposes) Allow public read access to packages via tracking number (simplification for "Customer App")
--- In real app, we would use a separate "recipient_token" or specific auth logic.
-create policy "Public can view package by tracking number"
-  on packages for select
-  using (true); 
-
--- 4. Seed some data (Mock Data for Demo)
-insert into packages (tracking_number, recipient_name, recipient_address, status, estimated_delivery_time, geo_lat, geo_lng, notes)
-values
-  ('LEO-849201', 'Jan Kowalski', 'Marszałkowska 1, Warszawa', 'in_transit', now() + interval '2 hours', 52.2297, 21.0122, 'Kod: 1234'),
-  ('LEO-991234', 'Anna Nowak', 'Złota 44, Warszawa', 'pending', now() + interval '4 hours', 52.2319, 21.0067, 'Winda towarowa');
+-- INITIAL SEED DATA
+insert into companies (name) values ('DPD'), ('DHL'), ('InPost'), ('LEO Direct') on conflict do nothing;

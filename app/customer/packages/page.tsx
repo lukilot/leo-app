@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { Truck, Calendar, Clock, ChevronRight, Archive, Loader2 } from "lucide-react";
+import { Truck, Calendar, Clock, ChevronRight, Archive, Loader2, Bell, User, CheckCircle, BrainCircuit, Box } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
@@ -59,109 +59,130 @@ export default function CustomerPackages() {
     const historyPackages = packages.filter(p => p.status === 'delivered' || p.status === 'failed');
 
     return (
-        <div className="min-h-screen bg-leo-bg pb-24">
-            <header className="bg-white p-6 sticky top-0 z-10 border-b border-leo-gray-100">
-                <h1 className="text-2xl font-bold text-leo-primary">Twoje przesyłki</h1>
-                <div className="flex gap-4 mt-4 relative">
-                    <button
-                        onClick={() => setTab("active")}
-                        className={cn("pb-2 text-sm font-medium transition-colors relative", tab === "active" ? "text-leo-primary" : "text-leo-gray-400")}
-                    >
-                        Aktywne ({loading ? '-' : activePackages.length})
-                        {tab === "active" && <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-leo-primary" />}
+        <div className="min-h-screen bg-leo-bg pb-24 font-sans selection:bg-leo-primary/10">
+            <header className="bg-leo-bg px-5 pt-14 pb-4 sticky top-0 z-10 flex items-center justify-between">
+                <h1 className="text-[28px] font-bold tracking-tight text-leo-gray-900">Moje paczki</h1>
+                <div className="flex items-center gap-3">
+                    <button className="h-10 w-10 flex items-center justify-center rounded-full bg-white hover:bg-leo-gray-50 border border-leo-gray-100 transition-colors">
+                        <Bell className="h-5 w-5 text-leo-gray-600" />
                     </button>
-                    <button
-                        onClick={() => setTab("history")}
-                        className={cn("pb-2 text-sm font-medium transition-colors relative", tab === "history" ? "text-leo-primary" : "text-leo-gray-400")}
-                    >
-                        Historia
-                        {tab === "history" && <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-leo-primary" />}
-                    </button>
+                    <div className="h-10 w-10 rounded-full bg-leo-gray-200 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center">
+                        <User className="h-6 w-6 text-leo-gray-500 mt-1" />
+                    </div>
                 </div>
             </header>
 
-            <main className="p-4 space-y-4">
-                {loading ? (
-                    <div className="flex justify-center items-center py-12 text-leo-primary">
-                        <Loader2 className="w-8 h-8 animate-spin" />
+            <main className="px-5 space-y-6">
+                {/* Nearest Delivery Hero Card */}
+                <div className="bg-white rounded-[24px] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-leo-gray-100/50 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-leo-primary/5 to-transparent rounded-bl-full pointer-events-none" />
+
+                    <div className="flex justify-between items-start mb-1 relative z-10">
+                        <span className="text-sm font-semibold text-leo-gray-500">Najbliższa dostawa</span>
                     </div>
-                ) : (
-                    <AnimatePresence mode="wait">
-                        {tab === "active" ? (
-                            <motion.div key="active" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-                                {activePackages.length === 0 ? (
-                                    <div className="text-center py-10 text-leo-gray-500">Brak aktywnych przesyłek.</div>
-                                ) : (
-                                    activePackages.map(pkg => {
-                                        const { date, time } = formatDeliveryTime(pkg.estimated_delivery_time);
-                                        return (
-                                            <Card key={pkg.id} className="border-l-4 border-l-leo-primary hover:shadow-md transition-shadow">
-                                                <CardContent className="p-5">
-                                                    <div className="flex justify-between items-start mb-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="h-10 w-10 bg-leo-primary/10 rounded-full flex items-center justify-center text-leo-primary">
-                                                                <Truck className="h-5 w-5" />
-                                                            </div>
-                                                            <div>
-                                                                {/* Mock brand name, in reality would come from sender data */}
-                                                                <h3 className="font-bold text-leo-gray-900">Sklep On-line</h3>
-                                                                <p className="text-xs text-leo-gray-500">{pkg.tracking_number}</p>
-                                                            </div>
-                                                        </div>
-                                                        <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-1 rounded-full uppercase">
-                                                            {translateStatus(pkg.status)}
-                                                        </span>
-                                                    </div>
 
-                                                    <div className="bg-leo-gray-50 rounded-lg p-3 grid grid-cols-2 gap-4 mb-4">
-                                                        <div>
-                                                            <div className="text-xs text-leo-gray-500 flex items-center gap-1"><Calendar className="h-3 w-3" /> Planowana data</div>
-                                                            <div className="font-bold text-leo-primary">{date}</div>
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-xs text-leo-gray-500 flex items-center gap-1"><Clock className="h-3 w-3" /> Okno</div>
-                                                            <div className="font-bold text-leo-primary">{time}</div>
-                                                        </div>
-                                                    </div>
+                    <div className="flex items-end gap-3 mb-4 relative z-10">
+                        <h2 className="text-4xl font-extrabold text-leo-primary tracking-tight">Za 25 min</h2>
+                    </div>
 
-                                                    <div className="flex gap-2">
-                                                        <Link href={`/customer/live?tracking=${pkg.tracking_number}`} className="w-full">
-                                                            <Button className="w-full bg-leo-primary text-white">Śledź na żywo</Button>
-                                                        </Link>
-                                                        <Button variant="outline" className="px-3">
-                                                            <Clock className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        );
-                                    })
-                                )}
-                            </motion.div>
-                        ) : (
-                            <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-                                {historyPackages.length === 0 ? (
-                                    <div className="text-center py-10 text-leo-gray-500">Brak historii przesyłek.</div>
-                                ) : (
-                                    historyPackages.map(pkg => (
-                                        <div key={pkg.id} className="flex items-center p-4 bg-white rounded-xl border border-leo-gray-100">
-                                            <div className="h-10 w-10 bg-leo-gray-50 rounded-full flex items-center justify-center text-leo-gray-400 mr-4">
-                                                <Archive className="h-5 w-5" />
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-sm">Sklep On-line</div>
-                                                <div className="text-xs text-leo-gray-500">{translateStatus(pkg.status)} {formatDeliveryTime(pkg.estimated_delivery_time).date}</div>
-                                            </div>
-                                            <div className="ml-auto">
-                                                <ChevronRight className="h-5 w-5 text-leo-gray-300" />
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                )}
+                    <div className="flex items-center gap-2 mb-5 relative z-10">
+                        <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-leo-accent text-leo-primary text-[11px] font-bold uppercase tracking-wider">
+                            <Truck className="w-3 h-3 mr-1" /> W drodze
+                        </div>
+                        <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-[11px] font-bold tracking-wider">
+                            <CheckCircle className="w-3 h-3 mr-1" /> Pewność doręczenia: Wysoka
+                        </div>
+                    </div>
+
+                    <div className="bg-leo-bg rounded-2xl p-4 flex gap-3 items-center mb-5 border border-leo-gray-100/50">
+                        <BrainCircuit className="w-6 h-6 text-leo-primary shrink-0" />
+                        <p className="text-[13px] leading-tight text-leo-gray-700">
+                            <strong>System wie:</strong> Masz wysoką szansę<br />
+                            doręczenia dziś <strong>18:10–18:40</strong>
+                        </p>
+                    </div>
+
+                    <Link href="/customer/live?tracking=mock" className="block relative z-10">
+                        <Button className="w-full h-[48px] rounded-2xl bg-leo-primary text-white font-semibold text-[15px] shadow-[0_4px_14px_rgba(232,93,4,0.25)] hover:shadow-[0_6px_20px_rgba(232,93,4,0.3)] border-0">
+                            Zarządzaj <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
+                    </Link>
+                </div>
+
+                {/* Horizontal Scroll Filter Pills */}
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x -mx-5 px-5">
+                    <button className="whitespace-nowrap rounded-full border border-leo-accent bg-leo-accent/30 text-leo-primary px-4 py-1.5 text-sm font-bold shadow-sm focus:outline-none snap-start shrink-0">
+                        W drodze
+                    </button>
+                    <button className="whitespace-nowrap rounded-full border border-leo-gray-200 bg-white text-leo-gray-600 px-4 py-1.5 text-sm font-medium hover:bg-leo-gray-50 focus:outline-none snap-start shrink-0 transition-colors">
+                        Do odebrania
+                    </button>
+                    <button className="whitespace-nowrap rounded-full border border-leo-gray-200 bg-white text-leo-gray-600 px-4 py-1.5 text-sm font-medium hover:bg-leo-gray-50 focus:outline-none snap-start shrink-0 transition-colors">
+                        Dostarczone
+                    </button>
+                    <button className="whitespace-nowrap rounded-full border border-leo-gray-200 bg-white text-leo-gray-600 px-4 py-1.5 text-sm font-medium hover:bg-leo-gray-50 focus:outline-none snap-start shrink-0 transition-colors">
+                        Zwroty
+                    </button>
+                </div>
+
+                {/* Package List matching mockup cards */}
+                <div className="space-y-3">
+                    {/* Item 1 - W drodze */}
+                    <div className="bg-white rounded-[20px] p-4 flex gap-4 items-center border border-leo-gray-100/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                        <div className="w-12 h-12 rounded-full bg-leo-accent/40 flex items-center justify-center shrink-0">
+                            <Box className="w-6 h-6 text-leo-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-[15px] text-leo-gray-900 truncate">ul. Kwiatowa 15, 00-001 Warszawa</h3>
+                            <p className="text-[13px] text-leo-gray-500 mb-1">Odbiorca: Anna Kowalska</p>
+                            <p className="text-[11px] font-medium text-leo-gray-400">
+                                Status: <span className="text-leo-primary font-bold">W drodze</span> | 17:30–19:30 | Kurier
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Item 2 - Do odebrania */}
+                    <div className="bg-white rounded-[20px] p-4 flex gap-4 items-center border border-leo-gray-100/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                        <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center shrink-0">
+                            <Box className="w-6 h-6 text-green-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-[15px] text-leo-gray-900 truncate">ul. Kwiatowa 15, 00-001 Warszawa</h3>
+                            <p className="text-[13px] text-leo-gray-500 mb-1">Odbiorca: Anna Kowalska</p>
+                            <p className="text-[11px] font-medium text-leo-gray-400">
+                                Status: <span className="text-green-600">Do odebrania</span> | Paczkomat, do 48h | InPost
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Item 3 - Dostarczone */}
+                    <div className="bg-white rounded-[20px] p-4 flex gap-4 items-center border border-leo-gray-100/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                        <div className="w-12 h-12 rounded-full bg-leo-gray-100 flex items-center justify-center shrink-0">
+                            <Box className="w-6 h-6 text-leo-gray-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-[15px] text-leo-gray-900 truncate">ul. Kwiatowa 15, 00-001 Warszawa</h3>
+                            <p className="text-[13px] text-leo-gray-500 mb-1">Odbiorca: Anna Kowalska</p>
+                            <p className="text-[11px] font-medium text-leo-gray-400">
+                                Status: <span className="text-leo-gray-600">Dostarczone</span> | 14:20 | Kurier
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Item 4 - Zwroty */}
+                    <div className="bg-white rounded-[20px] p-4 flex gap-4 items-center border border-leo-gray-100/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                        <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
+                            <Box className="w-6 h-6 text-orange-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-[15px] text-leo-gray-900 truncate">ul. Kwiatowa 15, 00-001 Warszawa</h3>
+                            <p className="text-[13px] text-leo-gray-500 mb-1">Odbiorca: Anna Kowalska</p>
+                            <p className="text-[11px] font-medium text-leo-gray-400">
+                                Status: <span className="text-orange-500">Zwroty</span> | Weryfikacja | Sklep
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </main>
 
             <BottomNav />

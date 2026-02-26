@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+const font = Plus_Jakarta_Sans({
+  variable: "--font-sans",
+  subsets: ["latin", "latin-ext"],
   display: "swap",
 });
 
@@ -29,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl">
-      <body className={`${inter.variable} antialiased bg-leo-bg text-leo-gray-900 min-h-screen`}>
+      <body className={`${font.variable} font-sans antialiased bg-leo-bg text-leo-gray-900 min-h-screen`}>
         {children}
       </body>
     </html>

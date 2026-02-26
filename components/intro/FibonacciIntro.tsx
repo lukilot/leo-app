@@ -1,10 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export function FibonacciIntro({ onComplete }: { onComplete: () => void }) {
     const [step, setStep] = useState(0);
+
+    const onCompleteRef = useRef(onComplete);
+
+    useEffect(() => {
+        onCompleteRef.current = onComplete;
+    }, [onComplete]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -14,11 +20,11 @@ export function FibonacciIntro({ onComplete }: { onComplete: () => void }) {
             setStep(2);
         }, 2800);
         const timer3 = setTimeout(() => {
-            onComplete();
+            onCompleteRef.current();
         }, 4000); // End intro
 
         return () => { clearTimeout(timer); clearTimeout(timer2); clearTimeout(timer3); };
-    }, [onComplete]);
+    }, []);
 
     return (
         <motion.div
@@ -44,8 +50,7 @@ export function FibonacciIntro({ onComplete }: { onComplete: () => void }) {
                             height: `${num * 10}%`,
                             bottom: 0,
                             left: 0,
-                            originX: 0,
-                            originY: 1
+                            transformOrigin: "bottom left"
                         }}
                     />
                 ))}
@@ -83,6 +88,14 @@ export function FibonacciIntro({ onComplete }: { onComplete: () => void }) {
                     </motion.div>
                 )}
             </div>
+
+            {/* Skip Button */}
+            <button
+                onClick={() => onCompleteRef.current()}
+                className="absolute bottom-10 text-white/50 hover:text-white transition-colors text-sm font-medium tracking-widest uppercase hover:bg-white/10 px-6 py-2 rounded-full border border-transparent hover:border-white/20"
+            >
+                Pomiń intro
+            </button>
         </motion.div>
     );
 }

@@ -8,9 +8,10 @@ module.exports = {
         extend: {
             colors: {
                 leo: {
-                    primary: "#0B1F3B",
-                    secondary: "#1E3A8A",
-                    bg: "#F5F7FA",
+                    primary: "#E85D04", // Brand Orange (Terracotta)
+                    secondary: "#1A1A1A", // Deep Dark
+                    bg: "#F5F5F4", // Light Cream / Beige
+                    accent: "#FFD8C4", // Muted Peach Highlight
                     white: "#FFFFFF",
                     gray: {
                         50: "#F9FAFB",
@@ -25,7 +26,12 @@ module.exports = {
                 },
             },
             fontFamily: {
-                sans: ["var(--font-inter)", "sans-serif"],
+                sans: ["var(--font-sans)", "sans-serif"],
+            },
+            borderRadius: {
+                '2xl': '1rem',
+                '3xl': '1.5rem',
+                '4xl': '2rem',
             },
         },
     },

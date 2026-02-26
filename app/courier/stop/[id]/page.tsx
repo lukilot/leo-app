@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { Navigation, Phone, Check, X, MapPin, Building, ArrowLeft, CheckCircle2, Loader2, Info } from "lucide-react";
+import { Navigation, Phone, Check, X, MapPin, Building, ArrowLeft, CheckCircle2, Loader2, Info, BrainCircuit, AlertCircle, Zap, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -119,23 +119,28 @@ export default function StopDetails({ params }: { params: { id: string } }) {
                     </motion.div>
                 )}
 
-                {/* Address Card */}
-                <Card className="border-l-4 border-l-leo-primary">
+                {/* Address Card (Vision 2026: IPO Integrated) */}
+                <Card className="border-0 shadow-[0_4px_20px_rgba(0,0,0,0.03)] rounded-[24px] overflow-hidden">
                     <CardContent className="p-6 space-y-4">
                         <div className="flex items-start gap-4">
-                            <MapPin className="h-6 w-6 text-leo-primary shrink-0 mt-1" />
+                            <div className="bg-leo-accent/30 p-2.5 rounded-xl">
+                                <MapPin className="h-6 w-6 text-leo-primary shrink-0" />
+                            </div>
                             <div>
                                 <h2 className="text-xl font-bold text-leo-gray-900 leading-tight">{pkg.recipient_address}</h2>
-                                <p className="text-sm text-leo-gray-500 mt-1 tracking-wide">{pkg.tracking_number}</p>
+                                <p className="text-[12px] font-bold text-leo-gray-400 mt-1 uppercase tracking-widest">{pkg.tracking_number} • {pkg.status === 'in_transit' ? 'W TRASIE' : 'POSTÓJ'}</p>
                             </div>
                         </div>
 
-                        {pkg.notes && (
-                            <div className="pt-4 border-t border-dotted flex items-center gap-2">
-                                <Building className="h-4 w-4 text-leo-gray-400" />
-                                <span className="font-medium text-sm text-leo-gray-700">Uwagi: {pkg.notes}</span>
+                        <div className="pt-4 border-t border-leo-gray-100/50 flex flex-col gap-3">
+                            <div className="flex items-center gap-3">
+                                <BrainCircuit className="h-4 w-4 text-leo-primary" />
+                                <span className="font-bold text-[13px] text-leo-gray-700">Inteligentne Wskazówki (IPO):</span>
                             </div>
-                        )}
+                            <p className="text-sm text-leo-gray-600 bg-leo-bg p-3 rounded-xl border border-leo-gray-100/50 leading-relaxed italic">
+                                "{pkg.notes || "Klatka B, kod 1234, wejście od podwórza. Nie dzwonić dzwonkiem - dziecko śpi."}"
+                            </p>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -152,14 +157,27 @@ export default function StopDetails({ params }: { params: { id: string } }) {
                     </div>
                 </div>
 
-                {/* Main Actions */}
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                    <Button variant="secondary" className="h-14 text-base border-leo-gray-200" onClick={() => alert("Nawigacja otwarta...")}>
-                        <Navigation className="mr-2 h-5 w-5 text-blue-500" /> Nawiguj
-                    </Button>
-                    <Button variant="secondary" className="h-14 text-base border-leo-gray-200" onClick={() => alert("Dzwonię...")}>
-                        <Phone className="mr-2 h-5 w-5 text-green-500" /> Zadzwoń
-                    </Button>
+                {/* Command Panel (Vision 2026: Automatic Comm) */}
+                <div className="space-y-3">
+                    <h3 className="font-bold text-leo-gray-400 text-[11px] uppercase tracking-[0.2em] pl-1">Panel Komend (Zero tarcia)</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Button variant="outline" className="h-20 rounded-2xl flex flex-col items-center justify-center gap-1 border-leo-gray-200 bg-white" onClick={() => alert("Wysłano prośbę o Plan B...")}>
+                            <Zap className="h-5 w-5 text-leo-primary" />
+                            <span className="text-[13px] font-bold">Poproś o Plan B</span>
+                        </Button>
+                        <Button variant="outline" className="h-20 rounded-2xl flex flex-col items-center justify-center gap-1 border-leo-gray-200 bg-white" onClick={() => alert("Zgłoszono problem z adresem...")}>
+                            <AlertCircle className="h-5 w-5 text-orange-500" />
+                            <span className="text-[13px] font-bold">Problem z adresem</span>
+                        </Button>
+                        <Button variant="outline" className="h-20 rounded-2xl flex flex-col items-center justify-center gap-1 border-leo-gray-200 bg-white" onClick={() => alert("Otwieram nawigację...")}>
+                            <Navigation className="h-5 w-5 text-blue-500" />
+                            <span className="text-[13px] font-bold">Nawiguj</span>
+                        </Button>
+                        <Button variant="outline" className="h-20 rounded-2xl flex flex-col items-center justify-center gap-1 border-leo-gray-200 bg-white" onClick={() => alert("Otwieram tłumacza...")}>
+                            <Globe className="h-5 w-5 text-green-500" />
+                            <span className="text-[13px] font-bold">Tłumacz AI</span>
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Floating Bottom Action */}

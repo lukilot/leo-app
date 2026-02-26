@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Navigation, Map, ZoomIn, ZoomOut, Maximize, AlertCircle, Phone, Video, Search, ChevronDown, Bell, LogOut, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { Navigation, Map, ZoomIn, ZoomOut, Maximize, AlertCircle, Phone, Video, Search, ChevronDown, Bell, LogOut, CheckCircle2, Clock, AlertTriangle, BrainCircuit, Activity, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function DispatchView() {
@@ -20,8 +20,8 @@ export default function DispatchView() {
             <aside className="w-full lg:w-96 bg-white border-r border-leo-gray-200 flex flex-col h-screen shrink-0 relative z-20 shadow-xl lg:shadow-none">
                 <header className="p-6 border-b border-leo-gray-100 flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black text-leo-primary tracking-tight">LEO</h1>
-                        <p className="text-xs uppercase font-bold text-leo-gray-400 tracking-widest">Dyspozytornia</p>
+                        <h1 className="text-2xl font-black text-leo-primary tracking-tight">SZTAB GENERALNY</h1>
+                        <p className="text-xs uppercase font-bold text-leo-gray-400 tracking-widest">Kontrola Operacyjna LEO</p>
                     </div>
                     <div className="flex bg-leo-gray-50 p-2 rounded-xl text-xs font-bold font-mono border border-leo-gray-200 shadow-inner">
                         <span className="text-leo-primary mr-2 uppercase">Warszawa</span>
@@ -34,25 +34,28 @@ export default function DispatchView() {
                 <div className="p-4 flex-1 overflow-y-auto space-y-6">
                     {/* Quick Stats Grid */}
                     <div className="grid grid-cols-2 gap-3">
-                        <Card className="bg-leo-primary border-transparent text-white shadow-md">
+                        <Card className="bg-leo-secondary border-transparent text-white shadow-md">
                             <CardContent className="p-4 pt-4">
-                                <div className="text-xs text-white/70 font-bold uppercase tracking-wider mb-1">Aktywni Kurierzy</div>
-                                <div className="text-3xl font-black">42</div>
+                                <div className="text-[10px] text-white/50 font-bold uppercase tracking-widest mb-1">Status Floty</div>
+                                <div className="text-2xl font-black">42/45</div>
+                                <div className="text-[10px] text-green-400 font-bold mt-1">● Aktywni</div>
                             </CardContent>
                         </Card>
-                        <Card className="bg-green-50 border-green-100 shadow-sm">
-                            <CardContent className="p-4 pt-4 text-green-900">
-                                <div className="text-xs font-bold uppercase tracking-wider mb-1">Doręczenia</div>
-                                <div className="text-3xl font-black">89%</div>
+                        <Card className="bg-white border-leo-gray-100 shadow-sm">
+                            <CardContent className="p-4 pt-4">
+                                <div className="text-[10px] text-leo-gray-400 font-bold uppercase tracking-widest mb-1">Osiągnięcie Okien</div>
+                                <div className="text-2xl font-black text-leo-primary">94.2%</div>
+                                <div className="text-[10px] text-leo-primary font-bold mt-1">Sloty 15-min</div>
                             </CardContent>
                         </Card>
-                        <Card className="bg-orange-50 border-orange-100 shadow-sm col-span-2">
+                        <Card className="bg-leo-accent/20 border-leo-accent/50 shadow-sm col-span-2">
                             <CardContent className="p-4 flex justify-between items-center">
                                 <div>
-                                    <div className="text-xs text-orange-900 font-bold uppercase tracking-wider mb-1"><AlertTriangle className="h-3 w-3 inline mr-1" />Zagrożone SLA</div>
-                                    <div className="text-2xl font-black text-orange-700">3 paczki</div>
+                                    <div className="text-[10px] text-leo-primary font-bold uppercase tracking-widest mb-0.5">Optimizer (Broker)</div>
+                                    <div className="text-[15px] font-black text-leo-gray-900 leading-tight">Przerzuć 12 paczek (Sektor W)</div>
+                                    <p className="text-[11px] text-leo-gray-500">Rekomendacja: Operator B2B-2</p>
                                 </div>
-                                <Button size="sm" variant="outline" className="border-orange-200 text-orange-800 bg-white">Reaguj</Button>
+                                <Button size="sm" className="bg-leo-primary text-white text-xs px-4">Zatwierdź</Button>
                             </CardContent>
                         </Card>
                     </div>
@@ -113,9 +116,11 @@ export default function DispatchView() {
             <main className="flex-1 right-0 top-0 bottom-0 relative h-screen bg-gray-200 flex flex-col">
                 {/* Top Navigation Overlay */}
                 <div className="absolute top-4 right-4 left-4 z-40 flex justify-between pointer-events-none">
-                    <div className="bg-white/90 backdrop-blur pointer-events-auto p-2 rounded-xl shadow-lg border border-white flex gap-1">
-                        <Button variant="secondary" size="sm" className="font-bold w-24">Mapa</Button>
-                        <Button variant="ghost" size="sm" className="font-bold w-24 text-leo-gray-500 hover:text-leo-primary">Kamery</Button>
+                    <div className="bg-white/90 backdrop-blur-md pointer-events-auto p-1.5 rounded-2xl shadow-xl border border-white/50 flex gap-1">
+                        <Button variant="secondary" size="sm" className="font-bold px-4 rounded-xl shadow-sm">Real-time Map</Button>
+                        <Button variant="ghost" size="sm" className="font-bold px-4 rounded-xl text-leo-gray-500 hover:text-leo-primary">Risk Heatmap</Button>
+                        <Button variant="ghost" size="sm" className="font-bold px-4 rounded-xl text-leo-gray-500 hover:text-leo-primary">Address Intelligence</Button>
+                        <Button variant="ghost" size="sm" className="font-bold px-4 rounded-xl text-leo-gray-500 hover:text-leo-primary">Operational Cost</Button>
                     </div>
 
                     <div className="flex gap-2 pointer-events-auto">
