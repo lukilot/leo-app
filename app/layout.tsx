@@ -11,15 +11,13 @@ const font = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "LEO - Modern Logistics",
   description: "Next-gen courier and customer experience",
-  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false, // App-like behavior
-  themeColor: "#0B1F3B",
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -29,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl">
-      <body className={`${font.variable} font-sans antialiased bg-leo-bg text-leo-gray-900 min-h-screen`}>
+      <body className={`${font.variable} font-sans antialiased bg-[#F5F5F4] text-[#111827] min-h-screen`} suppressHydrationWarning>
         {children}
       </body>
     </html>

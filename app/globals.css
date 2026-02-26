@@ -2,13 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+@layer base {
+  :root {
+    --leo-primary: 232 93 4;
+    --leo-secondary: 26 26 26;
+    --leo-bg: 245 245 244;
+  }
+
+  body {
+    @apply antialiased bg-[#F5F5F4] text-[#111827];
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: #F5F5F4;
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .h-safe-bottom {
+    height: env(safe-area-inset-bottom);
+  }
 }

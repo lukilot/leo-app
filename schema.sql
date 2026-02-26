@@ -59,7 +59,9 @@ create table if not exists packages (
   current_plan_b text, 
   is_plan_b_active boolean default false,
   
-  metadata jsonb -- For any extra firm-specific data
+  metadata jsonb, -- For any extra firm-specific data
+  current_delay_minutes integer default 0,
+  sector_id text
 );
 
 -- 4. Package Events (System of Events)
@@ -79,6 +81,26 @@ create table if not exists courier_status (
   speed double precision,
   battery_level int,
   last_updated timestamp with time zone default now()
+);
+
+-- 6. Address Intelligence (IPO+)
+create table if not exists address_intelligence (
+  id uuid default gen_random_uuid() primary key,
+  address_hash text unique not null,
+  formatted_address text,
+  nuances jsonb, -- { "gate_code": "123", "best_entrance": "side", "parking_tips": "easy" }
+  historical_at_door_avg interval,
+  updated_at timestamp with time zone default now()
+);
+
+-- 7. Sector Scores (Mój Rejon)
+create table if not exists sector_scores (
+  id uuid default gen_random_uuid() primary key,
+  courier_id uuid references auth.users(id),
+  sector_id text not null, -- 'Warszawa-Wola', 'Kraków-Centrum'
+  quality_score float check (quality_score >= 0 and quality_score <= 100),
+  parcels_delivered_total integer default 0,
+  unique(courier_id, sector_id)
 );
 
 -- RLS & Policies (Selective Visibility)

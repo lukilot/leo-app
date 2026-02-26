@@ -1,101 +1,81 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
 
 export function FibonacciIntro({ onComplete }: { onComplete: () => void }) {
     const [step, setStep] = useState(0);
 
-    const onCompleteRef = useRef(onComplete);
-
     useEffect(() => {
-        onCompleteRef.current = onComplete;
+        const t1 = setTimeout(() => setStep(1), 800);
+        const t2 = setTimeout(() => setStep(2), 2000);
+        const t3 = setTimeout(() => onComplete(), 3500);
+        return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }, [onComplete]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setStep(1);
-        }, 1000);
-        const timer2 = setTimeout(() => {
-            setStep(2);
-        }, 2800);
-        const timer3 = setTimeout(() => {
-            onCompleteRef.current();
-        }, 4000); // End intro
-
-        return () => { clearTimeout(timer); clearTimeout(timer2); clearTimeout(timer3); };
-    }, []);
 
     return (
         <motion.div
-            className="fixed inset-0 z-[100] bg-leo-primary flex flex-col items-center justify-center text-white overflow-hidden"
-            exit={{ opacity: 0, scale: 1.1 }}
-            transition={{ duration: 0.8 }}
+            onClick={() => onComplete()}
+            className="fixed inset-0 z-[9999] bg-leo-primary flex flex-col items-center justify-center text-white cursor-pointer overflow-hidden"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 0.4 }}
         >
-            {/* Fibonacci Spiral Animation */}
-            <div className="relative w-64 h-64 md:w-96 md:h-96">
-                {[1, 1, 2, 3, 5, 8].map((num, i) => (
-                    <motion.div
-                        key={i}
-                        className="absolute border border-white/20 rounded-tr-[100%]"
-                        initial={{ opacity: 0, scale: 0, rotate: -90 }}
-                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                        transition={{
-                            duration: 0.8,
-                            delay: i * 0.2,
-                            ease: [0.22, 1, 0.36, 1]
-                        }}
-                        style={{
-                            width: `${num * 10}%`,
-                            height: `${num * 10}%`,
-                            bottom: 0,
-                            left: 0,
-                            transformOrigin: "bottom left"
-                        }}
-                    />
-                ))}
+            <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-0 left-0 w-full h-full" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+            </div>
 
-                {/* Central content */}
+            <div className="relative flex flex-col items-center z-10">
                 <motion.div
-                    className="absolute right-0 top-0 p-4 text-right"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.5 }}
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="text-[120px] font-black italic tracking-tighter leading-none mb-6 drop-shadow-2xl"
                 >
-                    <div className="text-6xl font-black tracking-tighter">1.618</div>
-                    <div className="text-sm font-light uppercase tracking-[0.2em] text-white/60">Golden Ratio</div>
+                    LEO
                 </motion.div>
+
+                <div className="h-8 overflow-hidden text-center">
+                    <AnimatePresence mode="wait">
+                        {step === 0 && (
+                            <motion.p
+                                key="0"
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: -20, opacity: 0 }}
+                                className="text-[12px] font-black uppercase tracking-[0.5em] text-white/50"
+                            >
+                                Inicjalizacja...
+                            </motion.p>
+                        )}
+                        {step === 1 && (
+                            <motion.p
+                                key="1"
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: -20, opacity: 0 }}
+                                className="text-[12px] font-black uppercase tracking-[0.5em] text-white/80"
+                            >
+                                Logistyka Naturalna
+                            </motion.p>
+                        )}
+                        {step === 2 && (
+                            <motion.p
+                                key="2"
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: -20, opacity: 0 }}
+                                className="text-[12px] font-black uppercase tracking-[0.5em] text-leo-accent"
+                            >
+                                Gotowy do startu
+                            </motion.p>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
 
-            {/* Text Sequence */}
-            <div className="mt-12 h-20 text-center relative w-full max-w-md px-4">
-                {step === 0 && (
-                    <motion.p
-                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                        key="step0"
-                        className="text-lg font-light text-white/80"
-                    >
-                        Porządek w chaosie...
-                    </motion.p>
-                )}
-                {step >= 1 && (
-                    <motion.div
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        key="step1"
-                    >
-                        <h1 className="text-4xl font-bold tracking-tight mb-2">LEO</h1>
-                        <p className="text-sm text-white/60">Logistyka Naturalna</p>
-                    </motion.div>
-                )}
+            <div className="absolute bottom-12 text-[10px] font-black uppercase tracking-[0.3em] opacity-30 animate-pulse">
+                Kliknij aby pominąć
             </div>
-
-            {/* Skip Button */}
-            <button
-                onClick={() => onCompleteRef.current()}
-                className="absolute bottom-10 text-white/50 hover:text-white transition-colors text-sm font-medium tracking-widest uppercase hover:bg-white/10 px-6 py-2 rounded-full border border-transparent hover:border-white/20"
-            >
-                Pomiń intro
-            </button>
         </motion.div>
     );
 }

@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import {
+    Map, Navigation, CheckCircle2, Loader2, Play, ChevronUp, ChevronDown,
+    Truck, Zap, Camera, Mic, FileText, Settings, X, Search,
+    ArrowRightLeft, ListChecks, MessageSquare, Star, Award,
+    MapPin, Bell, LogOut, Info, ShieldCheck, Box, Globe
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BottomNav } from "@/components/layout/BottomNav";
-import { Map, Navigation, CheckCircle2, Loader2, Play, ChevronUp, ChevronDown } from "lucide-react";
-import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
 
 interface PackageData {
@@ -18,271 +22,274 @@ interface PackageData {
     estimated_delivery_time: string;
     window_start?: string;
     window_end?: string;
-    company?: string; // e.g., 'DPD', 'DHL'
+    company?: string;
+    type?: 'S' | 'M' | 'L' | 'XL';
 }
 
 export default function CourierDay() {
-    const [status, setStatus] = useState<"idle" | "calculating" | "ready" | "started">("idle");
+    const [status, setStatus] = useState<"onboarding" | "loading" | "calculating" | "ready" | "started">("onboarding");
     const [packages, setPackages] = useState<PackageData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showSettings, setShowSettings] = useState(false);
+    const [activeImport, setActiveImport] = useState<'scan' | 'voice' | 'file' | null>(null);
+    const [courierLevel, setCourierLevel] = useState(12);
 
-    useEffect(() => {
-        async function fetchPackages() {
+    const fetchPackages = async () => {
+        try {
             const { data, error } = await supabase
                 .from('packages')
                 .select('*')
                 .in('status', ['pending', 'in_transit'])
                 .order('estimated_delivery_time', { ascending: true });
 
-            if (data) {
+            if (data && data.length > 0) {
                 setPackages(data as PackageData[]);
             } else {
-                console.error("Error fetching packages:", error);
+                // Mock data for Vision 2026 Demo
+                setPackages([
+                    { id: '1', tracking_number: 'LEO-777-1', recipient_name: 'Tomasz Kowalski', recipient_address: 'Al. Jerozolimskie 1, Warszawa', status: 'pending', estimated_delivery_time: new Date().toISOString(), company: 'DPD', type: 'M' },
+                    { id: '2', tracking_number: 'LEO-888-2', recipient_name: 'Anna Próbna', recipient_address: 'ul. Marszałkowska 10, Warszawa', status: 'pending', estimated_delivery_time: new Date().toISOString(), company: 'DHL', type: 'S' },
+                    { id: '3', tracking_number: 'LEO-991-3', recipient_name: 'Marek Nowak', recipient_address: 'ul. Wawelska 4, Warszawa', status: 'pending', estimated_delivery_time: new Date().toISOString(), company: 'InPost', type: 'XL' }
+                ]);
             }
+        } catch (e) {
+            console.error("Fetch catch:", e);
+        } finally {
             setLoading(false);
         }
+    };
 
+    useEffect(() => {
         fetchPackages();
-
-        // Setup polling every 3 seconds for real-time demo effect
-        const interval = setInterval(fetchPackages, 3000);
-        return () => clearInterval(interval);
+        setTimeout(() => setLoading(false), 1500);
     }, []);
 
-    const handleCalculateRate = () => {
+    const handleCalculateRoute = () => {
         setStatus("calculating");
-        // Simulate algorithm loading
-        setTimeout(() => {
-            // Assign some mock companies if missing
-            const enriched = packages.map((p, i) => ({
-                ...p,
-                company: i % 2 === 0 ? 'DPD' : 'DHL'
-            }));
-            setPackages(enriched);
-            setStatus("ready");
-        }, 2000);
+        setTimeout(() => setStatus("ready"), 1200);
     };
 
     const movePackage = (index: number, direction: 'up' | 'down') => {
         const newPackages = [...packages];
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
         if (targetIndex < 0 || targetIndex >= packages.length) return;
-
-        const temp = newPackages[index];
-        newPackages[index] = newPackages[targetIndex];
-        newPackages[targetIndex] = temp;
+        [newPackages[index], newPackages[targetIndex]] = [newPackages[targetIndex], newPackages[index]];
         setPackages(newPackages);
-    };
-
-    const handleStartRoute = async () => {
-        setStatus("started");
-
-        // Vision 2026: Generate 15-min windows based on final order
-        const now = new Date();
-        const updatedPackages = packages.map((p, i) => {
-            const start = new Date(now.getTime() + (i * 15 + 10) * 60000);
-            const end = new Date(start.getTime() + 15 * 60000);
-            return {
-                ...p,
-                status: 'in_transit',
-                window_start: start.toISOString(),
-                window_end: end.toISOString()
-            };
-        });
-
-        setPackages(updatedPackages);
-
-        // Batch update in Supabase (simplified)
-        for (const pkg of updatedPackages) {
-            await supabase
-                .from('packages')
-                .update({
-                    status: 'in_transit',
-                    window_start: pkg.window_start,
-                    window_end: pkg.window_end
-                })
-                .eq('id', pkg.id);
-        }
     };
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-leo-bg flex items-center justify-center pb-24">
-                <Loader2 className="w-8 h-8 animate-spin text-leo-primary" />
-                <BottomNav />
+            <div className="min-h-screen bg-black flex flex-col items-center justify-center font-sans">
+                <div className="w-16 h-16 border-4 border-leo-primary border-t-transparent rounded-full animate-spin mb-6" />
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-leo-primary italic">Initialization LEO.Courier...</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] pb-24 relative font-sans selection:bg-leo-primary/10">
-            {/* Header */}
-            <header className="px-5 pt-14 pb-4 sticky top-0 z-10 bg-[#F8FAFC]/90 backdrop-blur-md flex justify-between items-center">
+        <div className="min-h-screen bg-[#F5F7F9] flex flex-col font-sans select-none pb-32">
+            {/* TACTICAL HEADER */}
+            <header className="px-6 pt-16 pb-6 sticky top-0 z-[100] bg-white/80 backdrop-blur-xl border-b border-gray-100 flex justify-between items-end">
                 <div>
-                    <h1 className="text-[28px] font-bold text-gray-900 tracking-tight">Dzień dobry!</h1>
-                    <p className="text-gray-500 text-[13px] font-medium mt-0.5 uppercase tracking-wider">{new Date().toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                    <h1 className="text-[20px] font-black uppercase tracking-tighter italic leading-none text-black">TRASA <span className="text-leo-primary">DZIŚ</span></h1>
+                    <div className="flex items-center gap-2 mt-1.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Łukasz • Poz. {courierLevel}</p>
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                    </div>
                 </div>
-                <div className="h-11 w-11 bg-white border border-gray-100 shadow-sm rounded-full flex items-center justify-center">
-                    <span className="font-bold text-leo-primary text-[15px]">LK</span>
+                <div className="flex items-center gap-3">
+                    <button onClick={() => setShowSettings(true)} className="h-12 w-12 rounded-2xl bg-black text-white flex items-center justify-center shadow-xl shadow-black/10 active:scale-95 transition-transform">
+                        <Settings className="w-5 h-5 text-leo-primary" />
+                    </button>
+                    <div className="h-12 w-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center font-black text-[10px] text-gray-400">
+                        WWA
+                    </div>
                 </div>
             </header>
 
-            <main className="px-5 space-y-6 mt-2">
-                {/* State: IDLE (Imported Packages) */}
-                {status === "idle" && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
-                        <div className="bg-white rounded-[24px] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100/50">
-                            <div className="mb-4">
-                                <h2 className="text-[17px] font-bold text-gray-900">Plan dnia</h2>
-                                <p className="text-[13px] text-gray-500">Podsumowanie zaimportowanych przesyłek</p>
-                            </div>
-                            <div className="grid grid-cols-3 gap-3 text-center">
-                                <div className="bg-[#F8FAFC] rounded-2xl py-3 px-2 border border-blue-50">
-                                    <div className="text-2xl font-extrabold text-leo-primary">{packages.length}</div>
-                                    <div className="text-[11px] font-medium text-gray-500 uppercase tracking-wider mt-0.5">Paczki</div>
-                                </div>
-                                <div className="bg-[#F8FAFC] rounded-2xl py-3 px-2 border border-blue-50">
-                                    <div className="text-2xl font-extrabold text-leo-primary">{Math.round(packages.length * 4.5)}<span className="text-[13px] font-bold ml-0.5">km</span></div>
-                                    <div className="text-[11px] font-medium text-gray-500 uppercase tracking-wider mt-0.5">Dystans</div>
-                                </div>
-                                <div className="bg-[#F8FAFC] rounded-2xl py-3 px-2 border border-blue-50">
-                                    <div className="text-2xl font-extrabold text-leo-primary">{Math.max(1, Math.round(packages.length * 0.4))}<span className="text-[13px] font-bold ml-0.5">h</span></div>
-                                    <div className="text-[11px] font-medium text-gray-500 uppercase tracking-wider mt-0.5">Czas</div>
-                                </div>
-                            </div>
+            <main className="px-6 pt-8 space-y-10 flex-1">
+                {/* 1. ONBOARDING / IMPORT DOCK */}
+                {status === 'onboarding' && (
+                    <motion.section initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6">
+                        <div className="text-center space-y-2">
+                            <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-gray-400 italic">Zaimportuj Paczki do LEO Engine</h2>
+                            <p className="text-[13px] font-medium text-gray-500">Wybierz metodę dodania listy paczek na dziś.</p>
                         </div>
-
-                        <div className="bg-[#F0F4FF] p-4 flex gap-3 items-center border border-blue-100 rounded-2xl">
-                            <CheckCircle2 className="w-6 h-6 text-leo-primary shrink-0" />
-                            <p className="text-[13px] leading-snug text-gray-700">
-                                <strong className="text-leo-primary block text-[14px]">Mocny start!</strong>
-                                Jakość planu: 98%. Pojemność auta: 85%.
-                            </p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Button onClick={() => setActiveImport('scan')} className="h-32 rounded-[2.5rem] bg-black text-white border-0 flex flex-col gap-3 shadow-2xl active:scale-95 transition-transform">
+                                <Camera className="w-6 h-6 text-leo-primary" />
+                                <span className="text-[11px] font-black uppercase tracking-widest">Skanuj Etykiety</span>
+                            </Button>
+                            <Button onClick={() => setActiveImport('voice')} className="h-32 rounded-[2.5rem] bg-white text-black border border-gray-100 flex flex-col gap-3 shadow-sm active:scale-95 transition-transform">
+                                <Mic className="w-6 h-6 text-[#E85D04]" />
+                                <span className="text-[11px] font-black uppercase tracking-widest">Dyktuj Adresy</span>
+                            </Button>
+                            <Button onClick={() => setActiveImport('file')} className="h-24 rounded-[2rem] bg-white text-black border border-gray-100 flex flex-col gap-2 col-span-2">
+                                <FileText className="w-5 h-5 text-gray-400" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Wgraj CSV / Plik firmy</span>
+                            </Button>
                         </div>
-
-                        <Button className="w-full mt-4" onClick={handleCalculateRate} disabled={packages.length === 0}>
-                            Ułóż trasę optymalną
-                        </Button>
-                    </motion.div>
+                        <div className="pt-4">
+                            <Button onClick={handleCalculateRoute} className="w-full h-16 rounded-[2rem] bg-leo-primary text-black font-black uppercase tracking-widest text-[12px] border-0">Oblicz trasę naturalną</Button>
+                        </div>
+                    </motion.section>
                 )}
 
-                {/* State: CALCULATING */}
-                {status === "calculating" && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="fixed inset-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center text-center p-8"
-                    >
-                        <div className="h-24 w-24 relative mb-8">
-                            <motion.div
-                                className="absolute inset-0 border-[6px] border-gray-100 rounded-full"
-                            />
-                            <motion.div
-                                className="absolute inset-0 border-[6px] border-t-leo-primary border-r-transparent border-b-transparent border-l-transparent rounded-full"
-                                animate={{ rotate: 360 }}
-                                transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-xl font-black tracking-tight text-leo-primary">LEO</span>
+                {/* 2. ROUTE CALCULATION / READY STATE */}
+                {(status === 'calculating' || status === 'ready' || status === 'started') && (
+                    <section className="space-y-8">
+                        {/* PERFORMANCE HUD */}
+                        <div className="bg-black rounded-[40px] p-8 text-white space-y-8 shadow-2xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 opacity-10">
+                                <Truck className="w-24 h-24 text-leo-primary" />
                             </div>
-                        </div>
-                        <h2 className="text-[22px] font-bold text-gray-900 tracking-tight">Optymalizacja trasy...</h2>
-                        <p className="text-[15px] text-gray-500 mt-2 max-w-[250px]">Analizuję okna czasowe i korki w Warszawie.</p>
-                    </motion.div>
-                )}
-
-                {/* State: READY (Route View) */}
-                {(status === "ready" || status === "started") && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                        {status === "ready" && (
-                            <div className="bg-green-50 p-4 rounded-2xl border border-green-200 flex items-center justify-between mb-2 shadow-sm">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-white/40 italic">Mój Rejon: Warszawa Wola</h3>
+                                <div className="flex items-center gap-1">
+                                    <Star className="w-3 h-3 text-leo-primary fill-current" />
+                                    <span className="text-[10px] font-black text-leo-primary uppercase italic">PRO Courier</span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-8">
                                 <div>
-                                    <h3 className="font-bold text-[15px] text-green-800 tracking-tight">Trasa gotowa!</h3>
-                                    <p className="text-[12px] font-medium text-green-700 mt-0.5">Oszczędność czasu: 45 min</p>
+                                    <div className="text-4xl font-black tracking-tighter italic text-leo-primary">{packages.length}</div>
+                                    <div className="text-[9px] font-bold uppercase tracking-widest text-white/40 mt-1">Stopy na trasie</div>
                                 </div>
-                                <Button size="sm" onClick={handleStartRoute} className="bg-[#10B981] hover:bg-[#059669] text-white rounded-full px-6 shadow-sm border-0 h-10">
-                                    <Play className="h-4 w-4 mr-1 fill-current" /> Start
-                                </Button>
-                            </div>
-                        )}
-
-                        {status === "started" && packages.length > 0 && (
-                            <div className="bg-leo-primary text-white p-5 rounded-[20px] shadow-[0_8px_30px_rgba(232,93,4,0.2)] mb-2 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-[100px] pointer-events-none" />
-                                <div className="flex justify-between items-center relative z-10">
-                                    <div className="flex-1 min-w-0 pr-4">
-                                        <h3 className="font-bold text-[13px] text-blue-100 uppercase tracking-wider mb-1 flex items-center"><Navigation className="h-3.5 w-3.5 mr-1" /> W trasie</h3>
-                                        <p className="text-white font-semibold text-[16px] truncate">{packages[0].recipient_address}</p>
-                                    </div>
-                                    <div className="bg-white text-leo-primary px-3 py-1.5 rounded-xl text-[12px] font-black shrink-0 shadow-sm">
-                                        ETA {new Date(packages[0].estimated_delivery_time).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
+                                <div>
+                                    <div className="text-4xl font-black tracking-tighter italic text-white">42km</div>
+                                    <div className="text-[9px] font-bold uppercase tracking-widest text-white/40 mt-1">Prognozowana trasa</div>
                                 </div>
                             </div>
-                        )}
-
-                        {/* List of stops */}
-                        <div className="space-y-3 mt-4">
-                            <h3 className="font-bold text-gray-500 text-[12px] uppercase tracking-widest pl-1 mb-3">Kolejność punktów</h3>
-
-                            {packages.map((pkg, i) => {
-                                const deliveryTime = new Date(pkg.estimated_delivery_time).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-                                return (
-                                    <div key={pkg.id} className="block w-full outline-none focus:ring-2 focus:ring-leo-primary rounded-[20px] relative group">
-                                        <div className="bg-white rounded-[20px] p-4 flex items-center border border-gray-100/80 shadow-[0_2px_10px_rgba(0,0,0,0.02)] active:scale-[0.98] transition-all hover:border-gray-200">
-                                            <div className="h-[46px] w-[46px] bg-[#F8FAFC] rounded-full flex flex-col items-center justify-center shrink-0 font-bold text-gray-600 border border-gray-100 mr-4 text-[15px] relative">
-                                                {i + 1}
-                                                {status === 'ready' && (
-                                                    <div className="absolute -left-12 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button onClick={() => movePackage(i, 'up')} className="p-1.5 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50"><ChevronUp className="w-3 h-3" /></button>
-                                                        <button onClick={() => movePackage(i, 'down')} className="p-1.5 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50"><ChevronDown className="w-3 h-3" /></button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex-1 overflow-hidden pr-2">
-                                                <div className="flex justify-between items-start mb-0.5">
-                                                    <div className="flex items-center gap-2 truncate">
-                                                        <span className="font-semibold text-[15px] text-gray-900 truncate">{pkg.recipient_address}</span>
-                                                        {pkg.company && (
-                                                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-bold uppercase tracking-tighter shrink-0">{pkg.company}</span>
-                                                        )}
-                                                    </div>
-                                                    <span className="text-[12px] bg-leo-accent/30 px-2 py-0.5 rounded-lg text-leo-primary font-bold shrink-0 ml-2">
-                                                        {pkg.window_start ?
-                                                            `${new Date(pkg.window_start).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}` :
-                                                            deliveryTime
-                                                        }
-                                                    </span>
-                                                </div>
-                                                <div className="text-[13px] text-gray-500 truncate">{pkg.recipient_name} • <span className="text-gray-400">{pkg.tracking_number}</span></div>
-                                            </div>
-                                            <Link href={`/courier/stop/${pkg.id}`} className="absolute inset-0 z-0" />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-
-                            {packages.length === 0 && (
-                                <div className="text-center py-10 bg-white border border-dashed border-gray-200 rounded-[24px]">
-                                    <p className="text-[15px] font-semibold text-gray-500">Wszystkie paczki doręczone!</p>
-                                </div>
+                            {status === 'ready' && (
+                                <Button onClick={() => setStatus('started')} className="w-full h-14 rounded-2xl bg-leo-primary text-black font-black uppercase tracking-widest text-[11px] border-0 shadow-lg shadow-leo-primary/10">Startuj Trasę & Wyślij Okna <Play className="w-4 h-4 ml-2" /></Button>
                             )}
                         </div>
 
-                        {/* Map Placeholder */}
-                        {packages.length > 0 && (
-                            <div className="h-[200px] bg-[#F2EDEA] rounded-[24px] flex items-center justify-center border border-black/5 relative overflow-hidden mt-8 shadow-sm">
-                                <div className="absolute inset-0 opacity-40 mix-blend-multiply" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #d1d5db 1px, transparent 0)", backgroundSize: "20px 20px" }} />
-                                <Button variant="secondary" className="relative z-10 shadow-md bg-white text-gray-900 font-bold h-12 rounded-full px-6">
-                                    <Map className="mr-2 h-4 w-4 text-gray-500" /> Pokaż mapę z trasą
-                                </Button>
+                        {/* PACKAGE LIST / DRAG & DROP UI */}
+                        <div className="space-y-6">
+                            <div className="flex justify-between items-end px-1">
+                                <h2 className="text-[12px] font-black uppercase tracking-[0.3em] text-gray-400 italic">Plan Pracy (Okna 15-min)</h2>
+                                {status === 'ready' && (
+                                    <p className="text-[9px] font-black text-leo-primary uppercase tracking-widest underline underline-offset-4 decoration-2">Zmień kolejność trasy</p>
+                                )}
                             </div>
-                        )}
-                    </motion.div>
+
+                            <div className="space-y-4">
+                                {packages.map((pkg, i) => (
+                                    <motion.div
+                                        key={pkg.id} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: i * 0.1 }}
+                                        className={cn(
+                                            "bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm flex items-center justify-between group active:scale-98 transition-transform",
+                                            status === 'started' && i === 0 ? "border-leo-primary border-2 ring-4 ring-leo-primary/5 shadow-2xl" : ""
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-5">
+                                            {/* WINDOW / COUNTER */}
+                                            <div className={cn(
+                                                "w-12 h-12 rounded-2xl flex flex-col items-center justify-center font-black shadow-sm",
+                                                status === 'started' && i === 0 ? "bg-black text-white" : "bg-gray-50 text-gray-400"
+                                            )}>
+                                                <span className="text-[8px] uppercase opacity-40 leading-none mb-1">STOP</span>
+                                                <span className="text-[16px] leading-none">{i + 1}</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <div className="text-[16px] font-black text-black leading-none uppercase italic tracking-tighter truncate w-40">{pkg.recipient_address.split(',')[0]}</div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">{pkg.recipient_name}</span>
+                                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-50 rounded-full border border-gray-100">
+                                                        <Box className="w-2.5 h-2.5 text-gray-400" />
+                                                        <span className="text-[8px] font-black text-gray-400">{pkg.type || 'M'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col items-end gap-2">
+                                            <div className="text-[12px] font-black font-mono tracking-tighter text-black">
+                                                {new Date(new Date().getTime() + (i * 15 + 10) * 60000).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                            {status === 'ready' && (
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => movePackage(i, 'up')} className="h-8 w-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-black">
+                                                        <ChevronUp className="w-4 h-4" />
+                                                    </button>
+                                                    <button onClick={() => movePackage(i, 'down')} className="h-8 w-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-black">
+                                                        <ChevronDown className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
                 )}
             </main>
 
-            <BottomNav />
+            {/* DOCK NAVIGATION / COMMAND BAR */}
+            <div className="fixed bottom-10 left-6 right-6 z-[100] bg-black text-white px-8 py-5 rounded-[2.5rem] shadow-3xl flex justify-between items-center border-[4px] border-white">
+                <button className="flex flex-col items-center gap-1.5 opacity-100">
+                    <Truck className="w-6 h-6 text-leo-primary" />
+                    <span className="text-[8px] font-black uppercase tracking-widest">Plan</span>
+                </button>
+                <div className="h-10 w-[1px] bg-white/10" />
+                <button className="flex flex-col items-center gap-1.5 opacity-40">
+                    <Map className="w-6 h-6" />
+                    <span className="text-[8px] font-black uppercase tracking-widest">Mapa</span>
+                </button>
+                <div className="h-10 w-[1px] bg-white/10" />
+                <button className="flex flex-col items-center gap-1.5 opacity-40">
+                    <MessageSquare className="w-6 h-6" />
+                    <span className="text-[8px] font-black uppercase tracking-widest">Inbox</span>
+                </button>
+            </div>
+
+            {/* SETTINGS MODAL */}
+            <AnimatePresence>
+                {showSettings && (
+                    <div className="fixed inset-0 z-[200] flex items-end justify-center">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSettings(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                        <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} className="bg-white rounded-t-[48px] w-full p-10 relative z-10 shadow-3xl border-t border-gray-100">
+                            <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-10" />
+                            <div className="space-y-8">
+                                <div className="space-y-2">
+                                    <h3 className="text-3xl font-black uppercase tracking-tighter italic text-black leading-tight">Ustawienia Kuriera</h3>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">Profil: Łukasz K. • LEO-PARTNER-01</p>
+                                </div>
+                                <div className="grid gap-3">
+                                    {[
+                                        { label: 'Firmy (Multi-Fleet)', val: 'DPD, DHL, LEO', icon: Truck },
+                                        { label: 'Strefa Cicha (Brak powiadomień)', val: 'Wyłączona', icon: Bell },
+                                        { label: 'Mój Rejon', val: 'Warszawa Wola', icon: MapPin },
+                                        { label: 'Język / Tłumaczenie', val: 'Polski (PL)', icon: Globe },
+                                    ].map((item, i) => (
+                                        <div key={i} className="flex justify-between items-center p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                                            <div className="flex items-center gap-4">
+                                                <item.icon className="w-5 h-5 text-leo-primary" />
+                                                <span className="text-[12px] font-black uppercase tracking-tight text-gray-900">{item.label}</span>
+                                            </div>
+                                            <span className="text-[11px] font-black text-gray-400 italic">{item.val}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex gap-4 pt-6">
+                                    <Button onClick={() => setShowSettings(false)} className="h-16 flex-1 rounded-[2rem] bg-black text-white font-black uppercase tracking-widest text-[12px] border-0">Zapisz Zmiany</Button>
+                                    <Button onClick={() => setShowSettings(false)} variant="ghost" className="h-16 w-16 rounded-[2rem] bg-red-50 border border-red-100 flex items-center justify-center">
+                                        <LogOut className="w-6 h-6 text-red-600" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Design Credit */}
+            <div className="text-center pt-8 pb-32">
+                <p className="text-[7px] font-black uppercase tracking-[0.2em] text-leo-primary opacity-30 italic">Design and execution by lukilot.work</p>
+            </div>
         </div>
     );
 }
