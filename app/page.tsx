@@ -175,8 +175,25 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Scanner Test */}
+        <div className="pt-8">
+          <Link href="/scan-test" className="block group">
+            <div className="p-6 rounded-[2rem] bg-black border-2 border-leo-primary/30 group-hover:border-leo-primary flex items-center gap-4 transition-all">
+              <div className="w-12 h-12 bg-leo-primary rounded-2xl flex items-center justify-center shrink-0">
+                <Zap className="w-6 h-6 text-black fill-current" />
+              </div>
+              <div className="flex-1">
+                <div className="text-[9px] font-black text-leo-primary uppercase tracking-widest">Narzędzie testowe</div>
+                <div className="text-white font-black italic uppercase tracking-tighter text-lg">Test Skanera QR</div>
+                <div className="text-white/30 text-[10px] font-medium mt-0.5">Przetestuj kamerę bez logowania</div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-leo-primary opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+            </div>
+          </Link>
+        </div>
+
         {/* Footer info */}
-        <div className="text-center pt-24 space-y-4">
+        <div className="text-center pt-16 space-y-4">
           <p className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-300">
             Logistyka Naturalna • Vision 2026
           </p>
